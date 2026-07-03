@@ -14,8 +14,9 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    printf("Servidor Data center iniciado.\n");
-    printf("Esperando conexiones...\n");
+    printf("=== IA Learner Data Center ===\n");
+    printf("Servidor del Data Center iniciado...\n");
+    printf("Esperando conexiones...\n\n");
 
     aceptarClientes(server_fd);
 

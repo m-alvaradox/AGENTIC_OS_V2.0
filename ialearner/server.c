@@ -70,7 +70,7 @@ void aceptarClientes(int server_fd)
             continue;
         }
 
-        printf("Cliente conectado.\n");
+        printf("Nuevo cliente conectado.\n");
 
         ClientInfo *info = malloc(sizeof(ClientInfo));
 
