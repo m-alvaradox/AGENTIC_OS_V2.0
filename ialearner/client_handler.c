@@ -82,3 +82,34 @@ int agregarCaracter(ClientInfo *info, char letra)
     info->longitud++;
     return 0;
 }
+
+void procesarDocumento(ClientInfo *info)
+{
+    if (info == NULL)
+    {
+        return;
+    }
+
+    if (info->longitud == info->capacidad)
+    { // Para asegurar espacio para el carácter nulo \0... 1 byte extra
+        char *temp = realloc(info->documento,
+                             info->capacidad + 1);
+
+        if (temp == NULL)
+        {
+            perror("realloc");
+            return;
+        }
+
+        info->documento = temp;
+        info->capacidad += 1;
+    }
+
+    info->documento[info->longitud] = '\0'; // Null-terminate the string
+
+    // Por ahora, simplemente imprimimos el documento recibido
+
+    printf("\n========== DOCUMENTO ==========\n");
+    printf("%s\n", info->documento);
+    printf("===============================\n");
+}
