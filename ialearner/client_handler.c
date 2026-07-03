@@ -16,41 +16,18 @@ void *atenderCliente(void *arg)
                 sizeof(char),
                 0) > 0)
     {
-        if (info->longitud == info->capacidad)
+        if (agregarCaracter(info, letra) == -1)
         {
-            size_t nuevaCapacidad;
-
-            if (info->capacidad == 0)
-            {
-                nuevaCapacidad = 256;
-            }
-            else
-            {
-                nuevaCapacidad = info->capacidad * 2;
-            }
-
-            // secure realloc
-
-            char *temp = realloc(info->documento, nuevaCapacidad);
-
-            if (temp == NULL)
-            {
-                perror("realloc");
-
-                free(info->documento);
-                close(info->client_fd);
-                free(info);
-
-                pthread_exit(NULL);
-            }
-
-            info->documento = temp;
-            info->capacidad = nuevaCapacidad;
+            liberarCliente(info);
+            return NULL;
         }
-        // Save word
-        info->documento[info->longitud] = letra;
-        info->longitud++;
     }
+
+    procesarDocumento(info);
+
+    liberarCliente(info);
+
+    return NULL;
 }
 
 void liberarCliente(ClientInfo *info)
@@ -69,4 +46,39 @@ void liberarCliente(ClientInfo *info)
 
 int agregarCaracter(ClientInfo *info, char letra)
 {
+    if (info == NULL)
+    {
+        return -1;
+    }
+
+    if (info->longitud == info->capacidad)
+    {
+        size_t nuevaCapacidad;
+
+        if (info->capacidad == 0)
+        {
+            nuevaCapacidad = 256;
+        }
+        else
+        {
+            nuevaCapacidad = info->capacidad * 2;
+        }
+
+        // secure realloc
+        char *temp = realloc(info->documento, nuevaCapacidad);
+
+        if (temp == NULL)
+        {
+            perror("realloc");
+            return -1;
+        }
+
+        info->documento = temp;
+        info->capacidad = nuevaCapacidad;
+    }
+
+    // Save word
+    info->documento[info->longitud] = letra;
+    info->longitud++;
+    return 0;
 }

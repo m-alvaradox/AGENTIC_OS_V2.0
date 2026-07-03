@@ -13,7 +13,7 @@ typedef struct
 } ClientInfo;
 
 void *atenderCliente(void *arg);
-void *liberarCliente(ClientInfo *info);
+void liberarCliente(ClientInfo *info);
 
 int agregarCaracter(ClientInfo *info, char letra);
 
