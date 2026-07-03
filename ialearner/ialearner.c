@@ -1,10 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
-int main()
+#include "server.h"
+
+int main(void)
 {
-    iniciarServidor();
+    int server_fd;
 
+    server_fd = iniciarServidor(5000);
+
+    if (server_fd == -1)
+    {
+        return EXIT_FAILURE;
+    }
+
+    printf("Servidor iniciado correctamente.\n");
+
+    aceptarClientes(server_fd);
+
+    return EXIT_SUCCESS;
 }
