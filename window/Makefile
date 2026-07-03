@@ -1,19 +1,19 @@
-# Makefile - IA Learner
+# Makefile - Window
 
 CC = gcc
 
 CFLAGS = -Wall -Wextra -g
-LDFLAGS = -pthread
+LDFLAGS = -lX11
 
-TARGET = ialearner
+TARGET = window
 
-SRCS = ialearner.c server.c client_handler.c
+SRCS = window.c network.c
 OBJS = $(SRCS:.c=.o)
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET) $(OBJS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<

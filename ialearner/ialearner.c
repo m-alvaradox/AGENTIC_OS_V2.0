@@ -14,7 +14,8 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    printf("Servidor iniciado correctamente.\n");
+    printf("Servidor Data center iniciado.\n");
+    printf("Esperando conexiones...\n");
 
     aceptarClientes(server_fd);
 

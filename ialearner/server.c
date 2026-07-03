@@ -21,7 +21,7 @@ int iniciarServidor(int puerto)
 
     if (server_fd == -1)
     {
-        perror("socket");
+        perror("socket servidor");
         return -1;
     }
 
@@ -55,8 +55,7 @@ void aceptarClientes(int server_fd)
 
     struct sockaddr_in cliente;
 
-    socklen_t cliente_len;
-    cliente_len = sizeof(cliente);
+    socklen_t cliente_len = sizeof(cliente);
 
     while (1)
     {
@@ -70,6 +69,8 @@ void aceptarClientes(int server_fd)
             perror("accept");
             continue;
         }
+
+        printf("Cliente conectado.\n");
 
         ClientInfo *info = malloc(sizeof(ClientInfo));
 
