@@ -8,7 +8,7 @@
 #define MAX_CLASS_NAME               50
 #define INITIAL_DICTIONARY_CAPACITY  10
 
-#define DICTIONARY_DIRECTORY "diccionarios/"
+#define DICTIONARY_DIRECTORY "../diccionarios/"
 #define EMAIL_DICTIONARY_FILE      "correo.txt"
 #define ARTICLE_DICTIONARY_FILE    "articulo.txt"
 #define REPORT_DICTIONARY_FILE     "reporte.txt"

@@ -4,6 +4,7 @@
 
 #include "config.h"
 #include "dictionary.h"
+#include "utils.h"
 
 // private function
 static int aumentarCapacidad(Dictionary *diccionario)
@@ -78,6 +79,8 @@ Dictionary *cargarDiccionario(const char *nombreArchivo,
     {
         // strip "\n"
         buffer[strcspn(buffer, "\n")] = '\0';
+        convertirMinusculas(buffer);
+        
 
         if (diccionario->cantidad == diccionario->capacidad)
         {

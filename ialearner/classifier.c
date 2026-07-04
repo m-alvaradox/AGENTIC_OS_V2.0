@@ -6,7 +6,9 @@
 
 #include "classifier.h"
 #include "config.h"
+#include "utils.h"
 
+/*
 static void convertirMinusculas(char *texto)
 {
 
@@ -14,7 +16,7 @@ static void convertirMinusculas(char *texto)
     {
         texto[i] = tolower((unsigned char)texto[i]);
     }
-}
+} */
 
 static bool existePalabra(const char *palabra,
                           const Dictionary *diccionario)
@@ -30,19 +32,23 @@ static bool existePalabra(const char *palabra,
     return false;
 }
 
-void clasificarDocumento(const char *documento,
-                         const Dictionary *correo,
-                         const Dictionary *articulo,
-                         const Dictionary *reporte)
+ClassificationResult clasificarDocumento(const char *documento,
+                                         const Dictionary *correo,
+                                         const Dictionary *articulo,
+                                         const Dictionary *reporte)
 {
-    printf("\n========== CLASIFICACIÓN DEL DOCUMENTO ==========\n");
+    ClassificationResult resultado = {
+        .clase = DOC_SIN_CLASIFICAR,
+        .coincidenciasCorreo = 0,
+        .coincidenciasArticulo = 0,
+        .coincidenciasReporte = 0};
 
     if (documento == NULL ||
         correo == NULL ||
         articulo == NULL ||
         reporte == NULL)
     {
-        return;
+        return resultado;
     }
 
     char *copia = malloc(strlen(documento) + 1);
@@ -50,16 +56,12 @@ void clasificarDocumento(const char *documento,
     if (copia == NULL)
     {
         perror("malloc");
-        return;
+        return resultado;
     }
 
     strcpy(copia, documento);
 
     convertirMinusculas(copia);
-
-    int count_words_correo = 0;
-    int count_words_articulo = 0;
-    int count_words_reporte = 0;
 
     // Tokenizacion
     char *token = strtok(copia, TOKEN_DELIMITERS);
@@ -70,25 +72,21 @@ void clasificarDocumento(const char *documento,
 
         if (existePalabra(token, correo))
         {
-            count_words_correo++;
+            resultado.coincidenciasCorreo++;
         }
 
         if (existePalabra(token, articulo))
         {
-            count_words_articulo++;
+            resultado.coincidenciasArticulo++;
         }
 
         if (existePalabra(token, reporte))
         {
-            count_words_reporte++;
+            resultado.coincidenciasReporte++;
         }
 
         token = strtok(NULL, TOKEN_DELIMITERS);
     }
-
-    printf("Correo: %d\n", count_words_correo);
-    printf("Articulo: %d\n", count_words_articulo);
-    printf("Reporte: %d\n", count_words_reporte);
 
     /* esto se borraria
         size_t longitud = strlen(documento);
@@ -113,7 +111,69 @@ void clasificarDocumento(const char *documento,
             palabra = strtok(NULL, " \n\t");
         } */
 
+    if (resultado.coincidenciasCorreo < 3)
+    {
+        resultado.coincidenciasCorreo = 0;
+    }
+
+    if (resultado.coincidenciasArticulo < 3)
+    {
+        resultado.coincidenciasArticulo = 0;
+    }
+
+    if (resultado.coincidenciasReporte < 3)
+    {
+        resultado.coincidenciasReporte = 0;
+    }
+
+    int mayor = 0;
+
+    if (resultado.coincidenciasCorreo > mayor)
+    {
+        mayor = resultado.coincidenciasCorreo;
+        resultado.clase = DOC_CORREO;
+    }
+
+    if (resultado.coincidenciasArticulo > mayor)
+    {
+        mayor = resultado.coincidenciasArticulo;
+        resultado.clase = DOC_ARTICULO;
+    }
+
+    if (resultado.coincidenciasReporte > mayor)
+    {
+        mayor = resultado.coincidenciasReporte;
+        resultado.clase = DOC_REPORTE;
+    }
+
     free(copia);
+    return resultado;
+}
+
+void imprimirClasificacion(const ClassificationResult *resultado)
+{
+    printf("\n========== CLASIFICACIÓN DEL DOCUMENTO ==========\n");
+    printf("Palabras correo: %d\n", resultado->coincidenciasCorreo);
+    printf("Parlabras articulo: %d\n", resultado->coincidenciasArticulo);
+    printf("Palabras reporte: %d\n\n", resultado->coincidenciasReporte);
+
+    switch (resultado->clase)
+    {
+    case DOC_CORREO:
+        printf("Clase: Correo electrónico\n");
+        break;
+
+    case DOC_ARTICULO:
+        printf("Clase: Artículo científico\n");
+        break;
+
+    case DOC_REPORTE:
+        printf("Clase: Reporte\n");
+        break;
+
+    default:
+        printf("Clase: Sin clasificar\n");
+    }
 
     printf("==================================================\n");
 }
