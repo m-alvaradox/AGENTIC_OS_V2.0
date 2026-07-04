@@ -5,6 +5,32 @@
 #include "config.h"
 #include "dictionary.h"
 
+// private function
+static int aumentarCapacidad(Dictionary *diccionario)
+{
+
+    int nuevaCapacidad = diccionario->capacidad * 2;
+
+    char **temp = realloc(diccionario->palabras, nuevaCapacidad * sizeof(char *));
+
+    if (temp == NULL)
+    {
+        return -1;
+    }
+
+    diccionario->palabras = temp;
+
+    // clean old to new capacity, init
+    for (int i = diccionario->capacidad; i < nuevaCapacidad; i++)
+    {
+        diccionario->palabras[i] = NULL;
+    }
+
+    diccionario->capacidad = nuevaCapacidad;
+
+    return 0;
+}
+
 Dictionary *cargarDiccionario(const char *nombreArchivo,
                               const char *nombreClase)
 {
@@ -83,28 +109,17 @@ Dictionary *cargarDiccionario(const char *nombreArchivo,
     return diccionario;
 }
 
-// private function
-static int aumentarCapacidad(Dictionary *diccionario)
-{
+void liberarDiccionario(Dictionary *diccionario) {
 
-    int nuevaCapacidad = diccionario->capacidad * 2;
-
-    char **temp = realloc(diccionario->palabras, nuevaCapacidad * sizeof(char *));
-
-    if (temp == NULL)
-    {
-        return -1;
+    if (diccionario == NULL) {
+        return;
     }
 
-    diccionario->palabras = temp;
-
-    // clean old to new capacity, init
-    for (int i = diccionario->capacidad; i < nuevaCapacidad; i++)
-    {
-        diccionario->palabras[i] = NULL;
+    for (int i = 0; i < diccionario->cantidad; i++){
+        free(diccionario->palabras[i]);
     }
 
-    diccionario->capacidad = nuevaCapacidad;
+    free(diccionario->palabras);
+    free(diccionario);
 
-    return 0;
 }

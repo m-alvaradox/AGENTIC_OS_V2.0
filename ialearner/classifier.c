@@ -5,8 +5,30 @@
 #include <ctype.h>
 
 #include "classifier.h"
-#include "dictionary.h"
 #include "config.h"
+
+static void convertirMinusculas(char *texto)
+{
+
+    for (int i = 0; texto[i] != '\0'; i++)
+    {
+        texto[i] = tolower((unsigned char)texto[i]);
+    }
+}
+
+static bool existePalabra(const char *palabra,
+                          const Dictionary *diccionario)
+{
+    for (int i = 0; i < diccionario->cantidad; i++)
+    {
+        if (strcmp(palabra, diccionario->palabras[i]) == 0)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 void clasificarDocumento(const char *documento,
                          const Dictionary *correo,
@@ -94,27 +116,4 @@ void clasificarDocumento(const char *documento,
     free(copia);
 
     printf("==================================================\n");
-}
-
-static void convertirMinusculas(char *texto)
-{
-
-    for (int i = 0; texto[i] != '\0'; i++)
-    {
-        texto[i] = tolower((unsigned char)texto[i]);
-    }
-}
-
-static bool existePalabra(const char *palabra,
-                          const Dictionary *diccionario)
-{
-    for (int i = 0; i < diccionario->cantidad; i++)
-    {
-        if (strcmp(palabra, diccionario->palabras[i]) == 0)
-        {
-            return true;
-        }
-    }
-
-    return false;
 }
