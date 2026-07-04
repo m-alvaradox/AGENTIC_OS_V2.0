@@ -88,29 +88,6 @@ ClassificationResult clasificarDocumento(const char *documento,
         token = strtok(NULL, TOKEN_DELIMITERS);
     }
 
-    /* esto se borraria
-        size_t longitud = strlen(documento);
-
-        char *copia = malloc(longitud + 1);
-
-        if (copia == NULL)
-        {
-            perror("malloc");
-            return;
-        }
-
-        strcpy(copia, documento);
-
-        // Tokenizacion
-        char *palabra = strtok(copia, " \n\t"); // Separacion por espacio, salto de linea y tabulacion
-
-        while (palabra != NULL)
-        {
-            printf("%s\n", palabra);
-
-            palabra = strtok(NULL, " \n\t");
-        } */
-
     if (resultado.coincidenciasCorreo < 3)
     {
         resultado.coincidenciasCorreo = 0;
@@ -152,7 +129,7 @@ ClassificationResult clasificarDocumento(const char *documento,
 
 void imprimirClasificacion(const ClassificationResult *resultado)
 {
-    printf("\n========== CLASIFICACIÓN DEL DOCUMENTO ==========\n");
+    printf("\n====== CLASIFICACIÓN DEL DOCUMENTO =====\n");
     printf("Palabras correo: %d\n", resultado->coincidenciasCorreo);
     printf("Parlabras articulo: %d\n", resultado->coincidenciasArticulo);
     printf("Palabras reporte: %d\n\n", resultado->coincidenciasReporte);
@@ -175,5 +152,5 @@ void imprimirClasificacion(const ClassificationResult *resultado)
         printf("Clase: Sin clasificar\n");
     }
 
-    printf("==================================================\n");
+    printf("========================================\n");
 }

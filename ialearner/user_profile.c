@@ -30,6 +30,7 @@ void registrarDocumento(UserProfile *perfil, DocumentClass clase)
 
     case DOC_ARTICULO:
         perfil->articulos++;
+        break;
 
     case DOC_REPORTE:
         perfil->reportes++;
@@ -40,29 +41,12 @@ void registrarDocumento(UserProfile *perfil, DocumentClass clase)
     }
 }
 
-void imprimirPerfil(const UserProfile *perfil)
-{
-
-    if (perfil == NULL)
-    {
-        return;
-    }
-
-    printf("\n========== PERFIL DEL USUARIO ==========\n");
-
-    printf("Correos: %d\n", perfil->correos);
-    printf("Artículos: %d\n", perfil->articulos);
-    printf("Reportes: %d\n", perfil->reportes);
-
-    printf("========================================\n");
-}
-
 UserType clasificarUsuario(const UserProfile *perfil)
 {
-    /* Se clasifica al usuario segun la distribucion 
-    porcentual de su actividad total frente a umbrales 
+    /* Se clasifica al usuario segun la distribucion
+    porcentual de su actividad total frente a umbrales
     predefinidos (config.h)
-    
+
     personal admin, predominancia alta
     de correos y minima actividad en el resto
 
@@ -101,6 +85,11 @@ UserType clasificarUsuario(const UserProfile *perfil)
 
     double pReporte =
         (double)perfil->reportes / total;
+
+    printf("=========== ESTADISTICAS ===========\n\n");
+    printf("%-11s %-2d (%.2f%%)\n", "Correos:", perfil->correos, pCorreo);
+    printf("%-11s %-2d (%.2f%%)\n", "Articulos:", perfil->articulos, pArticulo);
+    printf("%-11s %-2d (%.2f%%)\n", "Reportes:", perfil->reportes, pReporte);
 
     /*personal administrativo*/
 
@@ -141,3 +130,31 @@ UserType clasificarUsuario(const UserProfile *perfil)
     return USER_NO_DETECTADO;
 }
 
+void imprimirPerfilUsuario(UserType tipo)
+{
+    printf("\n=========== PERFIL DEL USUARIO ===========\n");
+
+    switch (tipo)
+    {
+    case USER_ADMINISTRATIVO:
+        printf("*********** Personal Administrativo ***********\n");
+        break;
+
+    case USER_TECNICO:
+        printf("*********** Personal Técnico *********** \n");
+        break;
+
+    case USER_PROFESOR:
+        printf("*********** Profesor *********** \n");
+        break;
+
+    case USER_ESTUDIANTE:
+        printf("*********** Estudiante *********** \n");
+        break;
+
+    default:
+        printf("*********** Desconocido *********** \n");
+    }
+
+    printf("==========================================\n");
+}

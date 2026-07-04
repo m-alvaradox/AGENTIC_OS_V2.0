@@ -46,6 +46,11 @@ int main(void)
 
     aceptarClientes(server_fd, &contexto);
 
+    UserType tipo;
+
+    tipo = clasificarUsuario(&contexto.perfil);
+    imprimirPerfilUsuario(tipo);
+
     liberarDiccionario(contexto.correo);
     liberarDiccionario(contexto.articulo);
     liberarDiccionario(contexto.reporte);

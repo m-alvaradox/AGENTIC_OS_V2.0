@@ -114,7 +114,6 @@ void procesarDocumento(ClientInfo *info)
 
     printf("\n========== DOCUMENTO RECIBIDO ==========\n");
     printf("%s\n", info->documento);
-    printf("==========================================\n");
 
     ClassificationResult resultado;
 

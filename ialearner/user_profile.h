@@ -22,10 +22,8 @@ void inicializarPerfil(UserProfile *perfil);
 void registrarDocumento(UserProfile *perfil,
                         DocumentClass clase);
 
-void imprimirPerfil(const UserProfile *perfil);
-
 UserType clasificarUsuario(const UserProfile *perfil);
 
-void imprimirTipoUsuario(UserType tipo);
+void imprimirPerfilUsuario(UserType tipo);
 
 #endif
