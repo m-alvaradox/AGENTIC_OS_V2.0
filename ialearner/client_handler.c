@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 
 #include "client_handler.h"
+#include "classifier.h"
 
 void *atenderCliente(void *arg)
 {
@@ -111,7 +112,9 @@ void procesarDocumento(ClientInfo *info)
 
     // Por ahora, simplemente imprimimos el documento recibido
 
-    printf("\n========== DOCUMENTO ==========\n");
+    printf("\n========== DOCUMENTO RECIBIDO ==========\n");
     printf("%s\n", info->documento);
-    printf("===============================\n");
+    printf("==========================================\n");
+
+    clasificarDocumento(info->documento);
 }
