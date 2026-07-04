@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 
 #include "network.h"
+#include "config.h"
 
 int main(void)
 {
@@ -28,8 +29,8 @@ int main(void)
     Window window = XCreateSimpleWindow(
         display,
         RootWindow(display, screen),
-        10, 10, 400, 200,
-        1,
+        WINDOW_POS_X, WINDOW_POS_Y, WINDOW_WIDTH, WINDOW_HEIGHT,
+        WINDOW_BORDER,
         BlackPixel(display, screen),
         WhitePixel(display, screen));
 

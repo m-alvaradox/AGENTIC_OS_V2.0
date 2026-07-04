@@ -6,9 +6,7 @@
 #include <sys/socket.h>
 
 #include "network.h"
-
-#define SERVER_IP "127.0.0.1"
-#define SERVER_PORT 5000
+#include "config.h"
 
 int conectarServidor(void)
 {
