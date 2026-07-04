@@ -21,6 +21,8 @@ void *atenderCliente(void *arg)
             liberarCliente(info);
             return NULL;
         }
+
+        printf("Recibido: %c\n", letra);
     }
 
     procesarDocumento(info);
