@@ -2,6 +2,7 @@
 #define CLIENT_HANDLER_H
 
 #include <stddef.h>
+#include "server_context.h"
 
 typedef struct
 {
@@ -9,7 +10,7 @@ typedef struct
     char *documento;
     size_t longitud; // tipo estandar de C para representar tamaños de memoria
     size_t capacidad;
-    int idWindow;
+    ServerContext *contexto;
 } ClientInfo;
 
 void *atenderCliente(void *arg);

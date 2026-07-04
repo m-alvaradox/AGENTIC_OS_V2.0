@@ -2,12 +2,12 @@
 
 CC = gcc
 
-CFLAGS = -Wall -Wextra -g
+CFLAGS = -Wall -Wextra -g -I../include
 LDFLAGS = -pthread
 
 TARGET = ialearner
 
-SRCS = ialearner.c server.c client_handler.c classifier.c
+SRCS = ialearner.c server.c client_handler.c classifier.c dictionary.c
 OBJS = $(SRCS:.c=.o)
 
 all: $(TARGET)

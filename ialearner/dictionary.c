@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "config.h";
-#include "dictionary.h";
+#include "config.h"
+#include "dictionary.h"
 
 Dictionary *cargarDiccionario(const char *nombreArchivo,
                               const char *nombreClase)

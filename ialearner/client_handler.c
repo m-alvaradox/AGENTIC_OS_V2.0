@@ -116,5 +116,8 @@ void procesarDocumento(ClientInfo *info)
     printf("%s\n", info->documento);
     printf("==========================================\n");
 
-    clasificarDocumento(info->documento);
+    clasificarDocumento(info->documento,
+                        info->contexto->correo,
+                        info->contexto->articulo,
+                        info->contexto->reporte);
 }

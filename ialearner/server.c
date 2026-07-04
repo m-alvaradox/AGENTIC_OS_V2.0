@@ -49,7 +49,7 @@ int iniciarServidor(int puerto)
     return server_fd;
 }
 
-void aceptarClientes(int server_fd)
+void aceptarClientes(int server_fd, ServerContext *contexto)
 {
     int client_fd;
 
@@ -85,6 +85,7 @@ void aceptarClientes(int server_fd)
         info->documento = NULL;
         info->longitud = 0;
         info->capacidad = 0;
+        info->contexto = contexto;
 
         pthread_t hilo;
 
