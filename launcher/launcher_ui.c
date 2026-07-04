@@ -2,12 +2,14 @@
 
 #include "launcher_ui.h"
 
-void ejecutarLauncher(ProcessManager *manager)
+void ejecutarLauncher(LauncherContext *context)
 {
     int opcion;
 
     do
     {
+        actualizarEstados(&context->processManager);
+
         printf("\n===== AGENTIC OS =====\n");
         printf("1. Crear Window\n");
         printf("2. Mostrar procesos\n");
@@ -19,11 +21,13 @@ void ejecutarLauncher(ProcessManager *manager)
         switch(opcion)
         {
             case 1:
-                printf("Crear Window\n");
+                if (crearProcesoWindow(&context->processManager) == -1) {
+                    printf("No fue posible crear la ventana.\n");
+                }
                 break;
 
             case 2:
-                printf("Mostrar procesos\n");
+                mostrarProcesos(&context->processManager);
                 break;
 
             case 3:

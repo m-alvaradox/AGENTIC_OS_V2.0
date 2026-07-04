@@ -1,8 +1,8 @@
 #ifndef LAUNCHER_UI_H
 #define LAUNCHER_UI_H
 
-#include "process_manager.h"
+#include "launcher_context.h"
 
-void ejecutarLauncher(ProcessManager *manager);
+void ejecutarLauncher(LauncherContext *context);
 
 #endif

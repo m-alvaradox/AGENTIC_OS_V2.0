@@ -6,22 +6,22 @@
 
 int main (void)
 {
-    ProcessManager manager;
+    LauncherContext context;
 
-    inicializarProcessManager(&manager);
+   inicializarProcessManager(&context.processManager);
 
-    if(conectarIALearner() == -1)
+    if(conectarIALearner(&context) == -1)
     {
         printf("No fue posible conectarse con IALearner.\n");
-        liberarProcessManager(&manager);
+        liberarProcessManager(&context.processManager);
         return 1;
     }
 
-    ejecutarLauncher(&manager);
+    ejecutarLauncher(&context);
 
-    desconectarIALearner();
+    desconectarIALearner(&context);
 
-    liberarProcessManager(&manager);
+    liberarProcessManager(&context.processManager);
 
     return 0;
 }

@@ -26,5 +26,10 @@ void inicializarProcessManager(ProcessManager *manager);
 
 void liberarProcessManager(ProcessManager *manager);
 
+int crearProcesoWindow(ProcessManager *manager);
+
+void actualizarEstados(ProcessManager *manager);
+
+void mostrarProcesos(const ProcessManager *manager);
 
 #endif

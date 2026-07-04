@@ -34,5 +34,10 @@
 #define UMBRAL_COMPLEMENTARIO 0.40
 #define UMBRAL_MINIMO         0.20
 
+/*Launcher*/
+//Process Manager
+#define WINDOW_EXECUTABLE "../window/window"
+#define INITIAL_CAPACITY 10
+
 #endif
 

@@ -8,7 +8,7 @@ typedef struct
     ProcessManager processManager;
     int socketIALearner;
 
-}LauncherContext;
+} LauncherContext;
 
 
 #endif

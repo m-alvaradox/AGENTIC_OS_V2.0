@@ -1,8 +1,21 @@
 #ifndef LAUNCHER_PROTOCOL_H
 #define LAUNCHER_PROTOCOL_H
 
-int conectarIALearner(void);
+#include "launcher_context.h"
 
-void desconectarIALearner(void);
+int conectarIALearner(LauncherContext *context);
+
+void desconectarIALearner(LauncherContext *context);
+
+int enviarStart(LauncherContext *context);
+
+int enviarEnd(LauncherContext *context);
+
+int recibirContexto(
+    LauncherContext *context,
+    char *buffer,
+    size_t size
+);
+
 
 #endif
