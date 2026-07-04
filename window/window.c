@@ -56,21 +56,35 @@ int main(void)
                                        NULL);
             // XLookupString representa que caracter produjo esa tecla considerando shift, capslock, etc.
             // si usuario pulsa Espacio, buffer[0] = ' ', si pulsa Enter, buffer[0] = '\n', etc.
-            
-            if (caracteres > 0) {
+
+            // Handle special keys
+            // Si usuario presiona Enter, enviara un newline character to the server
+            if (keysym == XK_Escape)
+            {
+                break;
+            }
+
+            if (keysym == XK_Return) // Enviar salto de linea "\n"
+            {
+                if(enviarCaracter(socket_fd, '\n') == -1)
+                {
+                    break;
+                }
+
+                continue;
+            }
+
+            // Caracter normal
+            if (caracteres > 0)
+            {
                 // debug
                 printf("Caracter presionado: %c\n", buffer[0]);
 
-                int enviados = send(socket_fd, &buffer[0], 1, 0);
-
-                if (enviados == -1)
+                if(enviarCaracter(socket_fd, buffer[0]) == -1)
                 {
-                    perror("Error enviando caracter al servidor");
+                    break;
                 }
             }
-
-            if (keysym == XK_Escape)
-                break; 
         }
     }
 

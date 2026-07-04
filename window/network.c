@@ -47,3 +47,17 @@ void cerrarConexion(int socket_fd)
 {
     close(socket_fd);
 }
+
+int enviarCaracter(int socket_fd, char caracter) 
+{
+    int enviados = send(socket_fd, &caracter, 1, 0);
+
+    if (enviados == -1)
+    {
+        perror("Error al enviar caracter");
+        return -1;
+    }
+
+    return 0;
+
+}

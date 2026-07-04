@@ -4,4 +4,6 @@
 int conectarServidor(void);
 void cerrarConexion(int socket_fd);
 
+int enviarCaracter(int socket_fd, char caracter);
+
 #endif
