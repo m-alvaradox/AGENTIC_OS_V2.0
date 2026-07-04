@@ -5,6 +5,7 @@
 #include "server.h"
 #include "server_context.h"
 #include "dictionary.h"
+#include "user_profile.h"
 #include "config.h"
 
 int main(void)
@@ -36,6 +37,8 @@ int main(void)
         liberarDiccionario(contexto.articulo);
         liberarDiccionario(contexto.reporte);
     }
+
+    inicializarPerfil(&contexto.perfil);
 
     printf("=== IA Learner Data Center ===\n");
     printf("Servidor del Data Center iniciado...\n");

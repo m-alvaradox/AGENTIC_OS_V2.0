@@ -29,5 +29,10 @@
 #define WINDOW_POS_X                 10
 #define WINDOW_POS_Y                 10
 
+/*Clasificacion Usuario .. Umbrales*/
+#define UMBRAL_DOMINANTE      0.60
+#define UMBRAL_COMPLEMENTARIO 0.40
+#define UMBRAL_MINIMO         0.20
+
 #endif
 

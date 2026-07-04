@@ -124,4 +124,6 @@ void procesarDocumento(ClientInfo *info)
                         info->contexto->reporte);
 
     imprimirClasificacion(&resultado);
+
+    registrarDocumento(&info->contexto->perfil, resultado.clase);
 }
