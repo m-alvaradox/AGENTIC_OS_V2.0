@@ -1,6 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
+#include <errno.h>
+#include <limits.h>
 
 #include "launcher_ui.h"
 #include "launcher_protocol.h"
@@ -41,9 +44,47 @@ static void manejarIALearnerNoDisponible(LauncherContext *context)
     cerrarTodasVentanas(context);
 }
 
+static int leerOpcionMenu(int *opcion)
+{
+    char linea[32];
+    char *fin;
+    long valor;
+
+    if (opcion == NULL)
+    {
+        return -1;
+    }
+
+    if (fgets(linea, sizeof(linea), stdin) == NULL)
+    {
+        return -1;
+    }
+
+    errno = 0;
+    valor = strtol(linea, &fin, 10);
+
+    if (fin == linea || errno == ERANGE || valor < INT_MIN || valor > INT_MAX)
+    {
+        return -1;
+    }
+
+    while (*fin == ' ' || *fin == '\t')
+    {
+        fin++;
+    }
+
+    if (*fin != '\n' && *fin != '\0')
+    {
+        return -1;
+    }
+
+    *opcion = (int)valor;
+    return 0;
+}
+
 void ejecutarLauncher(LauncherContext *context)
 {
-    int opcion;
+    int opcion = 0;
 
     do
     {
@@ -62,7 +103,11 @@ void ejecutarLauncher(LauncherContext *context)
         printf("4. Salir\n");
         printf("> ");
 
-        scanf("%d", &opcion);
+        if (leerOpcionMenu(&opcion) == -1)
+        {
+            printf("Opción inválida.\n");
+            continue;
+        }
 
         switch(opcion)
         {
