@@ -75,11 +75,12 @@ void *ejecutarControlServer(void *arg)
     printf("Launcher conectado.\n");
 
     ControlCommand comando;
+    int seguir = 1;
 
-    while (recv(launcherFD,
-                &comando,
-                sizeof(ControlCommand),
-                0) > 0)
+    while (seguir && recv(launcherFD,
+                          &comando,
+                          sizeof(ControlCommand),
+                          0) > 0)
     {
         switch (comando)
         {
@@ -95,6 +96,14 @@ void *ejecutarControlServer(void *arg)
 
             context->sessionActiva = false;
 
+            if (context->server_fd != -1)
+            {
+                close(context->server_fd);
+                context->server_fd = -1;
+            }
+
+            seguir = 0;
+
             break;
 
         default:
@@ -105,9 +114,7 @@ void *ejecutarControlServer(void *arg)
         }
     }
 
-    close(launcherFD);
-
-    close(serverFD);
+    context->launcherSocket = -1;
 
     return NULL;
 }

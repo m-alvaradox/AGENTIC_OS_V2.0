@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <errno.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -57,6 +58,8 @@ void aceptarClientes(int server_fd, ServerContext *contexto)
 
     socklen_t cliente_len = sizeof(cliente);
 
+    contexto->server_fd = server_fd;
+
     while (contexto->sessionActiva)
     {
         client_fd = accept(
@@ -66,6 +69,14 @@ void aceptarClientes(int server_fd, ServerContext *contexto)
 
         if (client_fd == -1)
         {
+            if (!contexto->sessionActiva ||
+                errno == EBADF ||
+                errno == EINVAL ||
+                errno == ENOTCONN)
+            {
+                break;
+            }
+
             perror("accept");
             continue;
         }

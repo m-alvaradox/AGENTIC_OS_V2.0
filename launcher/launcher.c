@@ -3,6 +3,7 @@
 #include "launcher_ui.h"
 #include "process_manager.h"
 #include "launcher_protocol.h"
+#include "user_profile.h"
 
 static void inicializarLauncherContext(LauncherContext *context)
 {
@@ -37,9 +38,27 @@ int main(void)
 
     UserContext usuario;
 
-    enviarComando(&context, CMD_END);
+    if (enviarComando(&context, CMD_END) == -1)
+    {
+        printf("No fue posible enviar el comando de finalizacion.\n");
 
-    recibirContexto(&context, &usuario);
+        desconectarIALearner(&context);
+        liberarLauncherContext(&context);
+
+        return 1;
+    }
+
+    if (recibirContexto(&context, &usuario) <= 0)
+    {
+        printf("No fue posible recibir el contexto del usuario.\n");
+
+        desconectarIALearner(&context);
+        liberarLauncherContext(&context);
+
+        return 1;
+    }
+
+    imprimirPerfilUsuario(usuario.tipo);
 
     desconectarIALearner(&context);
 

@@ -2,11 +2,11 @@
 
 CC=gcc
 
-CFLAGS = -Wall -Wextra -g -I../include
+CFLAGS = -Wall -Wextra -g -I../include -I../ialearner
 
 TARGET = launcher
 
-SRCS = launcher.c launcher_ui.c process_manager.c launcher_protocol.c
+SRCS = launcher.c launcher_ui.c process_manager.c launcher_protocol.c ../ialearner/user_profile.c
 OBJS = $(SRCS:.c=.o)
 
 all: $(TARGET)

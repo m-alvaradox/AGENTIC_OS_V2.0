@@ -17,6 +17,7 @@ typedef struct {
     ThreadManager threadManager;
 
     int launcherSocket;
+    int server_fd;
 
     bool sessionActiva;
     

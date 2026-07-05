@@ -27,6 +27,7 @@ void ejecutarLauncher(LauncherContext *context)
                 break;
 
             case 2:
+                actualizarEstados(&context->processManager);
                 mostrarProcesos(&context->processManager);
                 break;
 

@@ -53,20 +53,46 @@ int enviarComando(
         LauncherContext *context,
         ControlCommand comando)
 {
-    return send(
+    if (context == NULL)
+    {
+        return -1;
+    }
+
+    ssize_t enviados = send(
             context->socketIALearner,
             &comando,
             sizeof(ControlCommand),
             0);
+
+    if (enviados == -1)
+    {
+        perror("send");
+        return -1;
+    }
+
+    return 0;
 }
 
 int recibirContexto(
         LauncherContext *context,
         UserContext *contexto)
 {
-    return recv(
+    if (context == NULL || contexto == NULL)
+    {
+        return -1;
+    }
+
+    ssize_t recibidos = recv(
             context->socketIALearner,
             contexto,
             sizeof(UserContext),
             0);
+
+    if (recibidos == -1)
+    {
+        perror("recv");
+        return -1;
+    }
+
+    return (int)recibidos;
 }

@@ -9,24 +9,58 @@
 
 void inicializarProcessManager(ProcessManager *manager)
 {
+    if (manager == NULL)
+    {
+        return;
+    }
+
     manager->cantidad = 0;
     manager->capacidad = INITIAL_CAPACITY;
 
     manager->procesos = malloc(
         sizeof(ProcessInfo) * manager->capacidad);
 
+    if (manager->procesos == NULL)
+    {
+        manager->capacidad = 0;
+    }
+
     manager->siguienteID = 1;
 }
 
 void liberarProcessManager(ProcessManager *manager)
 {
+    if (manager == NULL)
+    {
+        return;
+    }
+
     free(manager->procesos);
+    manager->procesos = NULL;
+    manager->cantidad = 0;
+    manager->capacidad = 0;
+    manager->siguienteID = 1;
 }
 
 static int agregarProceso(ProcessManager *manager, pid_t pid)
 {
+    if (manager == NULL)
+    {
+        return -1;
+    }
+
+    if (manager->procesos == NULL && manager->capacidad != 0)
+    {
+        return -1;
+    }
+
     if (manager->cantidad == manager->capacidad)
     {
+        if (manager->capacidad == 0)
+        {
+            manager->capacidad = INITIAL_CAPACITY;
+        }
+
         manager->capacidad *= 2;
 
         ProcessInfo *temp = realloc(manager->procesos,
@@ -107,7 +141,7 @@ void actualizarEstados(ProcessManager *manager)
 
 void mostrarProcesos(const ProcessManager *manager)
 {
-    printf("\n============= Procesos ==============\n");
+    printf("\n============= Procesos ===============\n");
 
     for (int i = 0; i < manager->cantidad; i++)
     {
@@ -119,5 +153,5 @@ void mostrarProcesos(const ProcessManager *manager)
                     : "FINISHED");
     }
 
-    printf("=====================================\n");
+    printf("======================================\n");
 }

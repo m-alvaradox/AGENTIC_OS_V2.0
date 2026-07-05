@@ -1,16 +1,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
 
 #include "server.h"
 #include "server_context.h"
 #include "dictionary.h"
 #include "user_profile.h"
 #include "config.h"
+#include "control_server.h"
 
 int main(void)
 {
     int server_fd;
+    pthread_t controlThread;
+    ServerContext contexto;
+
+    memset(&contexto, 0, sizeof(contexto));
 
     server_fd = iniciarServidor(DOCUMENT_SERVICE_PORT);
 
@@ -19,13 +26,9 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    // Definir contexto
-
-    ServerContext contexto = {
-        .correo = cargarDiccionario(DICTIONARY_DIRECTORY EMAIL_DICTIONARY_FILE, EMAIL_CLASS_NAME),
-        .articulo = cargarDiccionario(DICTIONARY_DIRECTORY ARTICLE_DICTIONARY_FILE, ARTICLE_CLASS_NAME),
-        .reporte = cargarDiccionario(DICTIONARY_DIRECTORY REPORT_DICTIONARY_FILE, REPORT_CLASS_NAME),
-    };
+    contexto.correo = cargarDiccionario(DICTIONARY_DIRECTORY EMAIL_DICTIONARY_FILE, EMAIL_CLASS_NAME);
+    contexto.articulo = cargarDiccionario(DICTIONARY_DIRECTORY ARTICLE_DICTIONARY_FILE, ARTICLE_CLASS_NAME);
+    contexto.reporte = cargarDiccionario(DICTIONARY_DIRECTORY REPORT_DICTIONARY_FILE, REPORT_CLASS_NAME);
 
     if (contexto.correo == NULL ||
         contexto.articulo == NULL ||
@@ -36,6 +39,10 @@ int main(void)
         liberarDiccionario(contexto.correo);
         liberarDiccionario(contexto.articulo);
         liberarDiccionario(contexto.reporte);
+
+        close(server_fd);
+
+        return EXIT_FAILURE;
     }
 
     inicializarPerfil(&contexto.perfil);
@@ -43,10 +50,8 @@ int main(void)
     inicializarThreadManager(&contexto.threadManager);
 
     contexto.launcherSocket = -1;
-
+    contexto.server_fd = server_fd;
     contexto.sessionActiva = true;
-
-    pthread_t controlThread;
 
     if (pthread_create(&controlThread,
                        NULL,
@@ -58,6 +63,9 @@ int main(void)
         liberarDiccionario(contexto.correo);
         liberarDiccionario(contexto.articulo);
         liberarDiccionario(contexto.reporte);
+        liberarThreadManager(&contexto.threadManager);
+
+        close(server_fd);
 
         return EXIT_FAILURE;
     }
@@ -68,23 +76,36 @@ int main(void)
 
     aceptarClientes(server_fd, &contexto);
 
-    close(server_fd);
-
     pthread_join(controlThread, NULL);
 
     esperarThreads(&contexto.threadManager);
 
-    UserContext contextoUsuario;
+    if (contexto.launcherSocket != -1)
+    {
+        UserContext contextoUsuario;
 
-    contextoUsuario.tipo =
-        clasificarUsuario(&contexto.perfil);
+        contextoUsuario.tipo =
+            clasificarUsuario(&contexto.perfil);
 
-    // send to laucher
-        send(contexto.launcherSocket,
-     &contextoUsuario,
-     sizeof(UserContext),
-     0);
+        if (send(contexto.launcherSocket, // send to launcher
+                 &contextoUsuario,
+                 sizeof(UserContext),
+                 0) == -1)
+        {
+            perror("send");
+        }
 
+        close(contexto.launcherSocket);
+        contexto.launcherSocket = -1;
+    }
+
+    if (contexto.server_fd != -1)
+    {
+        close(contexto.server_fd);
+        contexto.server_fd = -1;
+    }
+
+    liberarThreadManager(&contexto.threadManager);
     liberarDiccionario(contexto.correo);
     liberarDiccionario(contexto.articulo);
     liberarDiccionario(contexto.reporte);
