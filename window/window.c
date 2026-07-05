@@ -32,6 +32,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    // Connect to the server
     int socket_fd = conectarServidor(puerto);
 
     if (socket_fd == -1)
@@ -70,9 +71,9 @@ int main(int argc, char **argv)
 
         if (event.type == KeyPress)
         {
-            KeySym keysym;
-            char buffer[2];
-            int caracteres;
+            KeySym keysym;  // detect escape, enter, other special keys
+            char buffer[2]; // buffer to hold the character
+            int caracteres; // number of characters read
 
             caracteres = XLookupString(&event.xkey,
                                        buffer,
@@ -80,12 +81,18 @@ int main(int argc, char **argv)
                                        &keysym,
                                        NULL);
 
+            // XLookupString representa que caracter produjo esa tecla considerando shift, capslock, etc.
+            // si usuario pulsa Espacio, buffer[0] = ' ', si pulsa Enter, buffer[0] = '\n', etc.
+
+            // Handle special keys
+            // Si usuario presiona Enter, enviara un newline character to the server
+
             if (keysym == XK_Escape)
             {
                 break;
             }
 
-            if (keysym == XK_Return)
+            if (keysym == XK_Return) // Enviar salto de linea "\n"
             {
                 if (enviarCaracter(socket_fd, '\n') == -1)
                 {
@@ -95,6 +102,7 @@ int main(int argc, char **argv)
                 continue;
             }
 
+            // Caracter normal
             if (caracteres > 0)
             {
                 if (enviarCaracter(socket_fd, buffer[0]) == -1)
@@ -104,7 +112,7 @@ int main(int argc, char **argv)
             }
         }
     }
-
+    // Close connection to server
     cerrarConexion(socket_fd);
 
     XDestroyWindow(display, window);

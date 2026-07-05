@@ -139,8 +139,6 @@ void procesarDocumento(ClientInfo *info)
 
     info->documento[info->longitud] = '\0'; // Null-terminate the string
 
-    // Por ahora, simplemente imprimimos el documento recibido
-
     printf("\n========== DOCUMENTO RECIBIDO ==========\n");
     printf("%s\n", info->documento);
 

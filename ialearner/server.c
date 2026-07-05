@@ -100,6 +100,8 @@ static void manejarCliente(int client_fd, SessionContext *session)
 
     if (agregarThread(&session->threadManager, hilo) == -1)
     {
+        // evitar hilos huerfanos despues del fallo
+        // solicitud para terminar el hilo
         pthread_cancel(hilo);
         pthread_join(hilo, NULL);
     }
