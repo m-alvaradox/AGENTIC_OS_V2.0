@@ -153,5 +153,7 @@ void procesarDocumento(ClientInfo *info)
 
     imprimirClasificacion(&resultado);
 
+    pthread_mutex_lock(&info->contexto->perfilMutex);
     registrarDocumento(&info->contexto->perfil, resultado.clase);
+    pthread_mutex_unlock(&info->contexto->perfilMutex);
 }

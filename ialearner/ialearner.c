@@ -46,6 +46,19 @@ int main(void)
 
     inicializarPerfil(&contexto.perfil);
 
+    if (pthread_mutex_init(&contexto.perfilMutex, NULL) != 0)
+    {
+        perror("pthread_mutex_init");
+
+        liberarDiccionario(contexto.correo);
+        liberarDiccionario(contexto.articulo);
+        liberarDiccionario(contexto.reporte);
+
+        close(server_fd);
+
+        return EXIT_FAILURE;
+    }
+
     inicializarThreadManager(&contexto.threadManager);
 
     contexto.launcherSocket = -1;
@@ -69,6 +82,7 @@ int main(void)
         liberarDiccionario(contexto.articulo);
         liberarDiccionario(contexto.reporte);
         liberarThreadManager(&contexto.threadManager);
+        pthread_mutex_destroy(&contexto.perfilMutex);
 
         close(server_fd);
 
@@ -92,6 +106,7 @@ int main(void)
     }
 
     liberarThreadManager(&contexto.threadManager);
+    pthread_mutex_destroy(&contexto.perfilMutex);
     liberarDiccionario(contexto.correo);
     liberarDiccionario(contexto.articulo);
     liberarDiccionario(contexto.reporte);

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "config.h"
 #include "thread_manager.h"
@@ -12,6 +13,7 @@ void inicializarThreadManager(ThreadManager *manager)
 
     manager->cantidad = 0;
     manager->capacidad = INITIAL_THREAD_CAPACITY;
+    manager->mutexInicializado = false;
 
     manager->hilos = malloc(
         sizeof(pthread_t) * manager->capacidad);
@@ -20,6 +22,17 @@ void inicializarThreadManager(ThreadManager *manager)
     {
         manager->capacidad = 0;
     }
+
+    if (pthread_mutex_init(&manager->mutex, NULL) != 0)
+    {
+        perror("pthread_mutex_init");
+        free(manager->hilos);
+        manager->hilos = NULL;
+        manager->capacidad = 0;
+        return;
+    }
+
+    manager->mutexInicializado = true;
 }
 
 void liberarThreadManager(ThreadManager *manager)
@@ -27,6 +40,12 @@ void liberarThreadManager(ThreadManager *manager)
     if (manager == NULL)
     {
         return;
+    }
+
+    if (manager->mutexInicializado)
+    {
+        pthread_mutex_destroy(&manager->mutex);
+        manager->mutexInicializado = false;
     }
 
     free(manager->hilos);
@@ -42,6 +61,11 @@ int agregarThread(ThreadManager *manager,
     if (manager == NULL)
     {
         return -1;
+    }
+
+    if (manager->mutexInicializado)
+    {
+        pthread_mutex_lock(&manager->mutex);
     }
 
     if (manager->cantidad == manager->capacidad)
@@ -60,6 +84,11 @@ int agregarThread(ThreadManager *manager,
 
         if (temp == NULL)
         {
+            if (manager->mutexInicializado)
+            {
+                pthread_mutex_unlock(&manager->mutex);
+            }
+
             return -1;
         }
 
@@ -68,6 +97,11 @@ int agregarThread(ThreadManager *manager,
 
     manager->hilos[manager->cantidad++] =
         thread;
+
+    if (manager->mutexInicializado)
+    {
+        pthread_mutex_unlock(&manager->mutex);
+    }
 
     return 0;
 }
@@ -79,7 +113,19 @@ void esperarThreads(ThreadManager *manager)
         return;
     }
 
-    for (int i = 0; i < manager->cantidad; i++)
+    if (manager->mutexInicializado)
+    {
+        pthread_mutex_lock(&manager->mutex);
+    }
+
+    int cantidad = manager->cantidad;
+
+    if (manager->mutexInicializado)
+    {
+        pthread_mutex_unlock(&manager->mutex);
+    }
+
+    for (int i = 0; i < cantidad; i++)
     {
         pthread_cancel(manager->hilos[i]);
         pthread_join(manager->hilos[i], NULL);

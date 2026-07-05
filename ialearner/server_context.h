@@ -1,6 +1,7 @@
 #ifndef SERVER_CONTEXT_H
 #define SERVER_CONTEXT_H
 
+#include <pthread.h>
 #include <stdbool.h>
 
 #include "config.h"
@@ -14,6 +15,7 @@ typedef struct {
     Dictionary *reporte;
 
     UserProfile perfil;
+    pthread_mutex_t perfilMutex;
 
     ThreadManager threadManager;
 

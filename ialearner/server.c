@@ -27,6 +27,18 @@ int iniciarServidor(int puerto)
         return -1;
     }
 
+    int opcion = 1;
+    if (setsockopt(server_fd,
+                   SOL_SOCKET,
+                   SO_REUSEADDR,
+                   &opcion,
+                   sizeof(opcion)) == -1)
+    {
+        perror("setsockopt");
+        close(server_fd);
+        return -1;
+    }
+
     memset(&servidor, 0, sizeof(servidor)); // limpiar campos de la estructura
 
     servidor.sin_family = AF_INET;
@@ -90,10 +102,6 @@ static void manejarCliente(int client_fd, ServerContext *contexto)
     {
         pthread_cancel(hilo);
         pthread_join(hilo, NULL);
-
-        close(client_fd);
-
-        free(info);
     }
 }
 

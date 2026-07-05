@@ -43,8 +43,11 @@ static void enviarPerfilUsuario(ServerContext *context)
 
     UserContext contextoUsuario;
 
+    pthread_mutex_lock(&context->perfilMutex);
     contextoUsuario.tipo =
         clasificarUsuario(&context->perfil);
+    inicializarPerfil(&context->perfil);
+    pthread_mutex_unlock(&context->perfilMutex);
 
     if (send(context->launcherSocket,
              &contextoUsuario,
@@ -72,6 +75,18 @@ void *ejecutarControlServer(void *arg)
     {
         perror("socket");
 
+        return NULL;
+    }
+
+    int opcion = 1;
+    if (setsockopt(serverFD,
+                   SOL_SOCKET,
+                   SO_REUSEADDR,
+                   &opcion,
+                   sizeof(opcion)) == -1)
+    {
+        perror("setsockopt");
+        close(serverFD);
         return NULL;
     }
 
@@ -198,7 +213,6 @@ void *ejecutarControlServer(void *arg)
                             pthread_cancel(hilo);
                             pthread_join(hilo, NULL);
                             close(server_fd);
-                            free(args);
                             break;
                         }
                     }
@@ -224,7 +238,6 @@ void *ejecutarControlServer(void *arg)
 
                     cerrarServidoresVentana(context);
                     enviarPerfilUsuario(context);
-                    inicializarPerfil(&context->perfil);
 
                     seguir = 0;
 
