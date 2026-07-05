@@ -12,7 +12,7 @@ int main(void)
 {
     int server_fd;
 
-    server_fd = iniciarServidor(SERVER_PORT);
+    server_fd = iniciarServidor(DOCUMENT_SERVICE_PORT);
 
     if (server_fd == -1)
     {
@@ -40,16 +40,50 @@ int main(void)
 
     inicializarPerfil(&contexto.perfil);
 
+    inicializarThreadManager(&contexto.threadManager);
+
+    contexto.launcherSocket = -1;
+
+    contexto.sessionActiva = true;
+
+    pthread_t controlThread;
+
+    if (pthread_create(&controlThread,
+                       NULL,
+                       ejecutarControlServer,
+                       &contexto) != 0)
+    {
+        perror("pthread_create");
+
+        liberarDiccionario(contexto.correo);
+        liberarDiccionario(contexto.articulo);
+        liberarDiccionario(contexto.reporte);
+
+        return EXIT_FAILURE;
+    }
+
     printf("=== IA Learner Data Center ===\n");
     printf("Servidor del Data Center iniciado...\n");
     printf("Esperando conexiones...\n\n");
 
     aceptarClientes(server_fd, &contexto);
 
-    UserType tipo;
+    close(server_fd);
 
-    tipo = clasificarUsuario(&contexto.perfil);
-    imprimirPerfilUsuario(tipo);
+    pthread_join(controlThread, NULL);
+
+    esperarThreads(&contexto.threadManager);
+
+    UserContext contextoUsuario;
+
+    contextoUsuario.tipo =
+        clasificarUsuario(&contexto.perfil);
+
+    // send to laucher
+        send(contexto.launcherSocket,
+     &contextoUsuario,
+     sizeof(UserContext),
+     0);
 
     liberarDiccionario(contexto.correo);
     liberarDiccionario(contexto.articulo);

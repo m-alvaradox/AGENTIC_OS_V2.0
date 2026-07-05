@@ -18,9 +18,10 @@
 #define REPORT_CLASS_NAME     "Reporte"
 
 /*Network*/
-#define SERVER_PORT          5000
-#define SERVER_IP            "127.0.0.1"
-#define SERVER_BACKLOG       10
+#define DOCUMENT_SERVICE_PORT          5000
+#define CONTROL_SERVICE_PORT           5001
+#define SERVER_IP                     "127.0.0.1"
+#define SERVER_BACKLOG                10
 
 /*Window*/
 #define WINDOW_WIDTH                 400
@@ -38,6 +39,9 @@
 //Process Manager
 #define WINDOW_EXECUTABLE "../window/window"
 #define INITIAL_CAPACITY 10
+
+//Threads Manager
+#define INITIAL_THREAD_CAPACITY 10
 
 #endif
 

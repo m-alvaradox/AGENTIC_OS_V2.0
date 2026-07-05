@@ -24,7 +24,7 @@ int conectarServidor(void)
     memset(&servidor, 0, sizeof(servidor)); // limpiar campos de la estructura
 
     servidor.sin_family = AF_INET;
-    servidor.sin_port = htons(SERVER_PORT);
+    servidor.sin_port = htons(DOCUMENT_SERVICE_PORT);
     servidor.sin_addr.s_addr = inet_addr(SERVER_IP);
 
     // Connect to the server

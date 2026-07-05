@@ -57,7 +57,7 @@ void aceptarClientes(int server_fd, ServerContext *contexto)
 
     socklen_t cliente_len = sizeof(cliente);
 
-    while (1)
+    while (contexto->sessionActiva)
     {
         client_fd = accept(
             server_fd,
@@ -89,11 +89,10 @@ void aceptarClientes(int server_fd, ServerContext *contexto)
 
         pthread_t hilo;
 
-        if (pthread_create(
-                &hilo,
-                NULL,
-                atenderCliente,
-                info) != 0)
+        if (pthread_create(&hilo,
+                           NULL,
+                           atenderCliente,
+                           info) != 0)
         {
             perror("pthread_create");
 
@@ -104,6 +103,19 @@ void aceptarClientes(int server_fd, ServerContext *contexto)
             continue;
         }
 
-        pthread_detach(hilo);
+        if (agregarThread(&contexto->threadManager, hilo) == -1)
+        {
+            // evitar hilos huerfanos despues del fallo
+            // solicitud para terminar el hilo
+            pthread_cancel(hilo);
+
+            pthread_join(hilo, NULL);
+
+            close(client_fd);
+
+            free(info);
+
+            continue;
+        }
     }
 }

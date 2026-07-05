@@ -31,7 +31,15 @@ int main(void)
         return 1;
     }
 
+    enviarComando(&context, CMD_START);
+
     ejecutarLauncher(&context);
+
+    UserContext usuario;
+
+    enviarComando(&context, CMD_END);
+
+    recibirContexto(&context, &usuario);
 
     desconectarIALearner(&context);
 
