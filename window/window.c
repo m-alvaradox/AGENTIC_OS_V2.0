@@ -82,19 +82,6 @@ int main(int argc, char **argv)
                 break;
             }
 
-            if (keysym == XK_m)
-            {
-                XIconifyWindow(display, window, screen);
-                continue;
-            }
-
-            if (keysym == XK_r)
-            {
-                XMapWindow(display, window);
-                XRaiseWindow(display, window);
-                continue;
-            }
-
             if (keysym == XK_Return)
             {
                 if (enviarCaracter(socket_fd, '\n') == -1)
