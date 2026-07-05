@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/socket.h>
 
 #include "server.h"
 #include "server_context.h"
@@ -85,25 +84,6 @@ int main(void)
     pthread_join(controlThread, NULL);
 
     esperarThreads(&contexto.threadManager);
-
-    if (contexto.launcherSocket != -1)
-    {
-        UserContext contextoUsuario;
-
-        contextoUsuario.tipo =
-            clasificarUsuario(&contexto.perfil);
-
-        if (send(contexto.launcherSocket, // send to launcher
-                 &contextoUsuario,
-                 sizeof(UserContext),
-                 0) == -1)
-        {
-            perror("send");
-        }
-
-        close(contexto.launcherSocket);
-        contexto.launcherSocket = -1;
-    }
 
     if (contexto.server_fd != -1)
     {
