@@ -56,10 +56,10 @@ void ejecutarLauncher(LauncherContext *context)
         {
             case 1:
             {
-                int puerto = context->processManager.siguientePuerto++;
+                int puerto;
 
-                if (context->socketIALearner != -1 &&
-                    enviarComando(context, CMD_OPEN_WINDOW, puerto) == -1)
+                if (context->socketIALearner == -1 ||
+                    solicitarVentana(context, &puerto) == -1)
                 {
                     printf("No fue posible abrir el puerto de la ventana.\n");
                     break;

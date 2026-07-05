@@ -84,6 +84,46 @@ int enviarComando(
     return 0;
 }
 
+int solicitarVentana(LauncherContext *context, int *puerto)
+{
+    if (context == NULL || puerto == NULL)
+    {
+        return -1;
+    }
+
+    if (enviarComando(context, CMD_OPEN_WINDOW, 0) == -1)
+    {
+        return -1;
+    }
+
+    ControlResponse respuesta;
+
+    ssize_t recibidos = recv(
+            context->socketIALearner,
+            &respuesta,
+            sizeof(ControlResponse),
+            0);
+
+    if (recibidos <= 0)
+    {
+        if (recibidos == -1)
+        {
+            perror("recv");
+        }
+
+        return -1;
+    }
+
+    if (!respuesta.ok)
+    {
+        return -1;
+    }
+
+    *puerto = respuesta.puerto;
+
+    return 0;
+}
+
 int recibirContexto(
         LauncherContext *context,
         UserContext *contexto)

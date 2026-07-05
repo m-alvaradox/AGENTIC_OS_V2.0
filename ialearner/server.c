@@ -63,7 +63,7 @@ int iniciarServidor(int puerto)
     return server_fd;
 }
 
-static void manejarCliente(int client_fd, ServerContext *contexto)
+static void manejarCliente(int client_fd, SessionContext *session)
 {
     printf("Nuevo cliente conectado.\n");
 
@@ -80,7 +80,7 @@ static void manejarCliente(int client_fd, ServerContext *contexto)
     info->documento = NULL;
     info->longitud = 0;
     info->capacidad = 0;
-    info->contexto = contexto;
+    info->session = session;
 
     pthread_t hilo;
 
@@ -98,14 +98,14 @@ static void manejarCliente(int client_fd, ServerContext *contexto)
         return;
     }
 
-    if (agregarThread(&contexto->threadManager, hilo) == -1)
+    if (agregarThread(&session->threadManager, hilo) == -1)
     {
         pthread_cancel(hilo);
         pthread_join(hilo, NULL);
     }
 }
 
-void aceptarClientes(int server_fd, ServerContext *contexto)
+void aceptarClientes(int server_fd, SessionContext *session)
 {
     int client_fd;
 
@@ -114,13 +114,11 @@ void aceptarClientes(int server_fd, ServerContext *contexto)
     socklen_t cliente_len = sizeof(cliente);
     struct pollfd pfd;
 
-    contexto->server_fd = server_fd;
-
     pfd.fd = server_fd;
     pfd.events = POLLIN;
     pfd.revents = 0;
 
-    while (contexto->sessionActiva)
+    while (session->sessionActiva)
     {
         int poll_result = poll(&pfd, 1, 200);
 
@@ -152,7 +150,7 @@ void aceptarClientes(int server_fd, ServerContext *contexto)
 
         if (client_fd == -1)
         {
-            if (!contexto->sessionActiva ||
+            if (!session->sessionActiva ||
                 errno == EBADF ||
                 errno == EINVAL ||
                 errno == ENOTCONN ||
@@ -166,7 +164,7 @@ void aceptarClientes(int server_fd, ServerContext *contexto)
             continue;
         }
 
-        manejarCliente(client_fd, contexto);
+        manejarCliente(client_fd, session);
     }
 }
 
@@ -174,19 +172,19 @@ void *aceptarClientesVentana(void *arg)
 {
     WindowServiceArgs *args = (WindowServiceArgs *)arg;
 
-    if (args == NULL || args->contexto == NULL)
+    if (args == NULL || args->session == NULL)
     {
         return NULL;
     }
 
     int server_fd = args->server_fd;
-    ServerContext *contexto = args->contexto;
+    SessionContext *session = args->session;
     struct sockaddr_in cliente;
     socklen_t cliente_len = sizeof(cliente);
 
     free(args);
 
-    while (contexto->sessionActiva)
+    while (session->sessionActiva)
     {
         int client_fd = accept(server_fd,
                                (struct sockaddr *)&cliente,
@@ -204,7 +202,7 @@ void *aceptarClientesVentana(void *arg)
             break;
         }
 
-        manejarCliente(client_fd, contexto);
+        manejarCliente(client_fd, session);
     }
 
     close(server_fd);

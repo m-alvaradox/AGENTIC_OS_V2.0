@@ -131,3 +131,28 @@ void esperarThreads(ThreadManager *manager)
         pthread_join(manager->hilos[i], NULL);
     }
 }
+
+void unirThreads(ThreadManager *manager)
+{
+    if (manager == NULL || manager->hilos == NULL)
+    {
+        return;
+    }
+
+    if (manager->mutexInicializado)
+    {
+        pthread_mutex_lock(&manager->mutex);
+    }
+
+    int cantidad = manager->cantidad;
+
+    if (manager->mutexInicializado)
+    {
+        pthread_mutex_unlock(&manager->mutex);
+    }
+
+    for (int i = 0; i < cantidad; i++)
+    {
+        pthread_join(manager->hilos[i], NULL);
+    }
+}

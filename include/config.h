@@ -22,6 +22,7 @@
 #define CONTROL_SERVICE_PORT           5001
 #define WINDOW_BASE_PORT               5100
 #define MAX_WINDOW_SERVERS             16
+#define MAX_SESSIONS                   16
 #define SERVER_IP                     "127.0.0.1"
 #define SERVER_BACKLOG                10
 
@@ -46,4 +47,3 @@
 #define INITIAL_THREAD_CAPACITY 10
 
 #endif
-

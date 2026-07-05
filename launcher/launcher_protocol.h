@@ -14,6 +14,8 @@ int enviarComando(
     int puerto
 );
 
+int solicitarVentana(LauncherContext *context, int *puerto);
+
 int recibirContexto(
     LauncherContext *context,
     UserContext *contexto);

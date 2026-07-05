@@ -12,18 +12,10 @@
 
 int main(void)
 {
-    int server_fd;
     pthread_t controlThread;
     ServerContext contexto;
 
     memset(&contexto, 0, sizeof(contexto));
-
-    server_fd = iniciarServidor(DOCUMENT_SERVICE_PORT);
-
-    if (server_fd == -1)
-    {
-        return EXIT_FAILURE;
-    }
 
     contexto.correo = cargarDiccionario(DICTIONARY_DIRECTORY EMAIL_DICTIONARY_FILE, EMAIL_CLASS_NAME);
     contexto.articulo = cargarDiccionario(DICTIONARY_DIRECTORY ARTICLE_DICTIONARY_FILE, ARTICLE_CLASS_NAME);
@@ -39,14 +31,10 @@ int main(void)
         liberarDiccionario(contexto.articulo);
         liberarDiccionario(contexto.reporte);
 
-        close(server_fd);
-
         return EXIT_FAILURE;
     }
 
-    inicializarPerfil(&contexto.perfil);
-
-    if (pthread_mutex_init(&contexto.perfilMutex, NULL) != 0)
+    if (pthread_mutex_init(&contexto.puertoMutex, NULL) != 0)
     {
         perror("pthread_mutex_init");
 
@@ -54,22 +42,13 @@ int main(void)
         liberarDiccionario(contexto.articulo);
         liberarDiccionario(contexto.reporte);
 
-        close(server_fd);
-
         return EXIT_FAILURE;
     }
 
     inicializarThreadManager(&contexto.threadManager);
 
-    contexto.launcherSocket = -1;
-    contexto.server_fd = server_fd;
-    contexto.window_count = 0;
-    for (int i = 0; i < MAX_WINDOW_SERVERS; i++)
-    {
-        contexto.window_server_fds[i] = -1;
-        contexto.window_ports[i] = -1;
-    }
-    contexto.sessionActiva = true;
+    contexto.server_fd = -1;
+    contexto.siguientePuertoVentana = WINDOW_BASE_PORT;
 
     if (pthread_create(&controlThread,
                        NULL,
@@ -82,9 +61,7 @@ int main(void)
         liberarDiccionario(contexto.articulo);
         liberarDiccionario(contexto.reporte);
         liberarThreadManager(&contexto.threadManager);
-        pthread_mutex_destroy(&contexto.perfilMutex);
-
-        close(server_fd);
+        pthread_mutex_destroy(&contexto.puertoMutex);
 
         return EXIT_FAILURE;
     }
@@ -92,8 +69,6 @@ int main(void)
     printf("=== IA Learner Data Center ===\n");
     printf("Servidor del Data Center iniciado...\n");
     printf("Esperando conexiones...\n\n");
-
-    aceptarClientes(server_fd, &contexto);
 
     pthread_join(controlThread, NULL);
 
@@ -106,7 +81,7 @@ int main(void)
     }
 
     liberarThreadManager(&contexto.threadManager);
-    pthread_mutex_destroy(&contexto.perfilMutex);
+    pthread_mutex_destroy(&contexto.puertoMutex);
     liberarDiccionario(contexto.correo);
     liberarDiccionario(contexto.articulo);
     liberarDiccionario(contexto.reporte);

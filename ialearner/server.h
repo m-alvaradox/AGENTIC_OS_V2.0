@@ -1,17 +1,17 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include "server_context.h"
+#include "session_context.h"
 
 typedef struct
 {
     int server_fd;
     int puerto;
-    ServerContext *contexto;
+    SessionContext *session;
 } WindowServiceArgs;
 
 int iniciarServidor(int puerto);
-void aceptarClientes(int server_fd, ServerContext *contexto);
+void aceptarClientes(int server_fd, SessionContext *session);
 void *aceptarClientesVentana(void *arg);
 
 #endif // SERVER_H

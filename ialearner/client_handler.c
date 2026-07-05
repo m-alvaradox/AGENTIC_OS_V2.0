@@ -16,7 +16,7 @@ void *atenderCliente(void *arg)
 
     for (;;)
     {
-        if (!info->contexto->sessionActiva)
+        if (!info->session->sessionActiva)
         {
             break;
         }
@@ -147,13 +147,13 @@ void procesarDocumento(ClientInfo *info)
     ClassificationResult resultado;
 
     resultado = clasificarDocumento(info->documento,
-                        info->contexto->correo,
-                        info->contexto->articulo,
-                        info->contexto->reporte);
+                        info->session->server->correo,
+                        info->session->server->articulo,
+                        info->session->server->reporte);
 
     imprimirClasificacion(&resultado);
 
-    pthread_mutex_lock(&info->contexto->perfilMutex);
-    registrarDocumento(&info->contexto->perfil, resultado.clase);
-    pthread_mutex_unlock(&info->contexto->perfilMutex);
+    pthread_mutex_lock(&info->session->perfilMutex);
+    registrarDocumento(&info->session->perfil, resultado.clase);
+    pthread_mutex_unlock(&info->session->perfilMutex);
 }

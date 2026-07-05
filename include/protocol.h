@@ -17,6 +17,13 @@ typedef struct
 
 } ControlMessage;
 
+typedef struct
+{
+    int ok;
+    int puerto;
+
+} ControlResponse;
+
 typedef enum
 {
     USER_NO_DETECTADO = 0,

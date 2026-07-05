@@ -24,4 +24,6 @@ int agregarThread(ThreadManager *manager, pthread_t thread);
 
 void esperarThreads(ThreadManager *manager);
 
+void unirThreads(ThreadManager *manager);
+
 #endif
