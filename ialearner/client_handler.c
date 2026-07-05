@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <errno.h>
 
 #include "client_handler.h"
 #include "classifier.h"
@@ -11,19 +12,42 @@ void *atenderCliente(void *arg)
     ClientInfo *info = (ClientInfo *)arg;
 
     char letra;
+    ssize_t r;
 
-    while (recv(info->client_fd,
-                &letra,
-                sizeof(char),
-                0) > 0)
+    for (;;)
     {
-        if (agregarCaracter(info, letra) == -1)
+        r = recv(info->client_fd,
+                 &letra,
+                 sizeof(char),
+                 0);
+
+        if (r > 0)
         {
-            liberarCliente(info);
-            return NULL;
+            if (agregarCaracter(info, letra) == -1)
+            {
+                liberarCliente(info);
+                return NULL;
+            }
+
+            printf("Recibido: %c\n", letra);
+            continue;
         }
 
-        printf("Recibido: %c\n", letra);
+        if (r == 0)
+        {
+            // peer closed connection normally
+            break;
+        }
+
+        // r == -1
+        if (errno == EINTR)
+        {
+            continue; // retry
+        }
+
+        perror("recv");
+        liberarCliente(info);
+        return NULL;
     }
 
     procesarDocumento(info);

@@ -35,6 +35,25 @@ void liberarProcessManager(ProcessManager *manager)
         return;
     }
 
+    // Ensure running child processes are terminated and reaped to avoid zombies
+    for (int i = 0; i < manager->cantidad; i++)
+    {
+        pid_t pid = manager->procesos[i].pid;
+
+        if (manager->procesos[i].estado == PROCESS_RUNNING)
+        {
+            // ask the child to terminate
+            kill(pid, SIGTERM);
+            // wait for child to exit (blocking) to ensure no zombies remain
+            waitpid(pid, NULL, 0);
+        }
+        else
+        {
+            // attempt to reap any finished children (may return -1 if already reaped)
+            waitpid(pid, NULL, WNOHANG);
+        }
+    }
+
     free(manager->procesos);
     manager->procesos = NULL;
     manager->cantidad = 0;

@@ -56,20 +56,20 @@ Dictionary *cargarDiccionario(const char *nombreArchivo,
     diccionario->cantidad = 0;
     diccionario->capacidad = INITIAL_DICTIONARY_CAPACITY;
 
+
     diccionario->palabras = malloc(diccionario->capacidad * sizeof(char *));
-
-    // Init punteros
-
-    for (int i = 0; i < diccionario->capacidad; i++)
-    {
-        diccionario->palabras[i] = NULL;
-    }
 
     if (diccionario->palabras == NULL)
     {
         fclose(archivo);
         free(diccionario);
         return NULL;
+    }
+
+    // Init punteros
+    for (int i = 0; i < diccionario->capacidad; i++)
+    {
+        diccionario->palabras[i] = NULL;
     }
 
     char buffer[MAX_WORD_LENGTH];

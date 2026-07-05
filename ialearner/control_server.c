@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <pthread.h>
+#include <errno.h>
 
 #include "control_server.h"
 #include "config.h"
@@ -76,42 +77,61 @@ void *ejecutarControlServer(void *arg)
 
     ControlCommand comando;
     int seguir = 1;
+    ssize_t r;
 
-    while (seguir && recv(launcherFD,
-                          &comando,
-                          sizeof(ControlCommand),
-                          0) > 0)
+    while (seguir)
     {
-        switch (comando)
+        r = recv(launcherFD,
+                 &comando,
+                 sizeof(ControlCommand),
+                 0);
+
+        if (r > 0)
         {
-        case CMD_START:
-
-            printf("Sesion iniciada.\n");
-
-            break;
-
-        case CMD_END:
-
-            printf("Sesion finalizada.\n");
-
-            context->sessionActiva = false;
-
-            if (context->server_fd != -1)
+            switch (comando)
             {
-                close(context->server_fd);
-                context->server_fd = -1;
+            case CMD_START:
+                printf("Sesion iniciada.\n");
+                break;
+
+            case CMD_END:
+                printf("Sesion finalizada.\n");
+
+                context->sessionActiva = false;
+
+                if (context->server_fd != -1)
+                {
+                    close(context->server_fd);
+                    context->server_fd = -1;
+                }
+
+                seguir = 0;
+
+                break;
+
+            default:
+                printf("Comando invalido.\n");
+                break;
             }
 
-            seguir = 0;
+            continue;
+        }
 
-            break;
-
-        default:
-
-            printf("Comando invalido.\n");
-
+        if (r == 0)
+        {
+            // launcher closed connection
+            printf("Launcher cerró la conexión.\n");
             break;
         }
+
+        // r == -1
+        if (errno == EINTR)
+        {
+            continue; // retry
+        }
+
+        perror("recv");
+        break;
     }
 
     if (serverFD != -1)
