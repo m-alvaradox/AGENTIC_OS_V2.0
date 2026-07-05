@@ -6,27 +6,117 @@
 #include "dictionary.h"
 #include "utils.h"
 
-// private function
-static int aumentarCapacidad(Dictionary *diccionario)
+struct DictionaryNode
 {
+    char *palabra;
+    struct DictionaryNode *siguiente;
+};
 
-    int nuevaCapacidad = diccionario->capacidad * 2;
+static unsigned long hashPalabra(const char *palabra)
+{
+    unsigned long hash = 5381;
+    int c;
 
-    char **temp = realloc(diccionario->palabras, nuevaCapacidad * sizeof(char *));
+    while ((c = (unsigned char)*palabra++) != '\0')
+    {
+        hash = ((hash << 5) + hash) + c;
+    }
 
-    if (temp == NULL)
+    return hash;
+}
+
+static char *copiarCadena(const char *cadena)
+{
+    char *copia = malloc(strlen(cadena) + 1);
+
+    if (copia == NULL)
+    {
+        return NULL;
+    }
+
+    strcpy(copia, cadena);
+    return copia;
+}
+
+static int insertarPalabra(Dictionary *diccionario,
+                           const char *palabra)
+{
+    if (diccionario == NULL ||
+        palabra == NULL ||
+        diccionario->capacidad == 0)
     {
         return -1;
     }
 
-    diccionario->palabras = temp;
+    unsigned long indice =
+        hashPalabra(palabra) %
+        (unsigned long)diccionario->capacidad;
 
-    // clean old to new capacity, init
-    for (int i = diccionario->capacidad; i < nuevaCapacidad; i++)
+    DictionaryNode *actual = diccionario->tabla[indice];
+
+    while (actual != NULL)
     {
-        diccionario->palabras[i] = NULL;
+        if (strcmp(actual->palabra, palabra) == 0)
+        {
+            return 0;
+        }
+
+        actual = actual->siguiente;
     }
 
+    DictionaryNode *nuevo = malloc(sizeof(DictionaryNode));
+
+    if (nuevo == NULL)
+    {
+        return -1;
+    }
+
+    nuevo->palabra = copiarCadena(palabra);
+
+    if (nuevo->palabra == NULL)
+    {
+        free(nuevo);
+        return -1;
+    }
+
+    nuevo->siguiente = diccionario->tabla[indice];
+    diccionario->tabla[indice] = nuevo;
+    diccionario->cantidad++;
+
+    return 0;
+}
+
+static int aumentarCapacidad(Dictionary *diccionario)
+{
+    int nuevaCapacidad = diccionario->capacidad * 2;
+
+    DictionaryNode **nuevaTabla = calloc(nuevaCapacidad,
+                                         sizeof(DictionaryNode *));
+
+    if (nuevaTabla == NULL)
+    {
+        return -1;
+    }
+
+    for (int i = 0; i < diccionario->capacidad; i++)
+    {
+        DictionaryNode *actual = diccionario->tabla[i];
+
+        while (actual != NULL)
+        {
+            DictionaryNode *siguiente = actual->siguiente;
+            unsigned long indice =
+                hashPalabra(actual->palabra) %
+                (unsigned long)nuevaCapacidad;
+
+            actual->siguiente = nuevaTabla[indice];
+            nuevaTabla[indice] = actual;
+            actual = siguiente;
+        }
+    }
+
+    free(diccionario->tabla);
+    diccionario->tabla = nuevaTabla;
     diccionario->capacidad = nuevaCapacidad;
 
     return 0;
@@ -57,19 +147,14 @@ Dictionary *cargarDiccionario(const char *nombreArchivo,
     diccionario->capacidad = INITIAL_DICTIONARY_CAPACITY;
 
 
-    diccionario->palabras = malloc(diccionario->capacidad * sizeof(char *));
+    diccionario->tabla = calloc(diccionario->capacidad,
+                                sizeof(DictionaryNode *));
 
-    if (diccionario->palabras == NULL)
+    if (diccionario->tabla == NULL)
     {
         fclose(archivo);
         free(diccionario);
         return NULL;
-    }
-
-    // Init punteros
-    for (int i = 0; i < diccionario->capacidad; i++)
-    {
-        diccionario->palabras[i] = NULL;
     }
 
     char buffer[MAX_WORD_LENGTH];
@@ -80,49 +165,85 @@ Dictionary *cargarDiccionario(const char *nombreArchivo,
         // strip "\n"
         buffer[strcspn(buffer, "\n")] = '\0';
         convertirMinusculas(buffer);
-        
 
-        if (diccionario->cantidad == diccionario->capacidad)
+        if (buffer[0] == '\0')
         {
-            if (aumentarCapacidad(diccionario) == -1)
-            {
-                liberarDiccionario(diccionario);
-                fclose(archivo);
-                return NULL;
-            }
+            continue;
         }
 
-        char *palabra = malloc(strlen(buffer) + 1);
-
-        if (palabra == NULL)
+        if (diccionario->cantidad * 4 >= diccionario->capacidad * 3 &&
+            aumentarCapacidad(diccionario) == -1)
         {
             liberarDiccionario(diccionario);
             fclose(archivo);
             return NULL;
         }
 
-        strcpy(palabra, buffer);
-
-        diccionario->palabras[diccionario->cantidad] = palabra;
-
-        diccionario->cantidad++;
+        if (insertarPalabra(diccionario, buffer) == -1)
+        {
+            liberarDiccionario(diccionario);
+            fclose(archivo);
+            return NULL;
+        }
     }
     fclose(archivo);
 
     return diccionario;
 }
 
-void liberarDiccionario(Dictionary *diccionario) {
+void liberarDiccionario(Dictionary *diccionario)
+{
 
-    if (diccionario == NULL) {
+    if (diccionario == NULL)
+    {
         return;
     }
 
-    for (int i = 0; i < diccionario->cantidad; i++){
-        free(diccionario->palabras[i]);
+    for (int i = 0; i < diccionario->capacidad; i++)
+    {
+        DictionaryNode *actual = diccionario->tabla[i];
+
+        while (actual != NULL)
+        {
+            DictionaryNode *siguiente = actual->siguiente;
+
+            free(actual->palabra);
+            free(actual);
+
+            actual = siguiente;
+        }
     }
 
-    free(diccionario->palabras);
+    free(diccionario->tabla);
     free(diccionario);
 
+}
+
+bool diccionarioContiene(const Dictionary *diccionario,
+                         const char *palabra)
+{
+    if (diccionario == NULL ||
+        palabra == NULL ||
+        diccionario->capacidad == 0)
+    {
+        return false;
+    }
+
+    unsigned long indice =
+        hashPalabra(palabra) %
+        (unsigned long)diccionario->capacidad;
+
+    DictionaryNode *actual = diccionario->tabla[indice];
+
+    while (actual != NULL)
+    {
+        if (strcmp(actual->palabra, palabra) == 0)
+        {
+            return true;
+        }
+
+        actual = actual->siguiente;
+    }
+
+    return false;
 }

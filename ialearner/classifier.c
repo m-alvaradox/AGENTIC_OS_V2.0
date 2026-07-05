@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <ctype.h>
 
 #include "classifier.h"
 #include "config.h"
@@ -17,20 +15,6 @@ static void convertirMinusculas(char *texto)
         texto[i] = tolower((unsigned char)texto[i]);
     }
 } */
-
-static bool existePalabra(const char *palabra,
-                          const Dictionary *diccionario)
-{
-    for (int i = 0; i < diccionario->cantidad; i++)
-    {
-        if (strcmp(palabra, diccionario->palabras[i]) == 0)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
 
 ClassificationResult clasificarDocumento(const char *documento,
                                          const Dictionary *correo,
@@ -70,17 +54,17 @@ ClassificationResult clasificarDocumento(const char *documento,
     {
         // caso word se encuentra en mas diccionarios
 
-        if (existePalabra(token, correo))
+        if (diccionarioContiene(correo, token))
         {
             resultado.coincidenciasCorreo++;
         }
 
-        if (existePalabra(token, articulo))
+        if (diccionarioContiene(articulo, token))
         {
             resultado.coincidenciasArticulo++;
         }
 
-        if (existePalabra(token, reporte))
+        if (diccionarioContiene(reporte, token))
         {
             resultado.coincidenciasReporte++;
         }
