@@ -4,16 +4,30 @@
 #include "process_manager.h"
 #include "launcher_protocol.h"
 
-int main (void)
+static void inicializarLauncherContext(LauncherContext *context)
+{
+
+    inicializarProcessManager(&context->processManager);
+    context->socketIALearner = -1;
+}
+
+static void liberarLauncherContext(LauncherContext *context)
+{
+    liberarProcessManager(&context->processManager);
+}
+
+int main(void)
 {
     LauncherContext context;
 
-   inicializarProcessManager(&context.processManager);
+    inicializarLauncherContext(&context);
 
-    if(conectarIALearner(&context) == -1)
+    if (conectarIALearner(&context) == -1)
     {
         printf("No fue posible conectarse con IALearner.\n");
-        liberarProcessManager(&context.processManager);
+
+        liberarLauncherContext(&context);
+
         return 1;
     }
 
@@ -21,7 +35,7 @@ int main (void)
 
     desconectarIALearner(&context);
 
-    liberarProcessManager(&context.processManager);
+    liberarLauncherContext(&context);
 
     return 0;
 }
