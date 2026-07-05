@@ -137,23 +137,23 @@ void imprimirPerfilUsuario(UserType tipo)
     switch (tipo)
     {
     case USER_ADMINISTRATIVO:
-        printf("*********** Personal Administrativo ***********\n");
+        printf("Personal Administrativo\n");
         break;
 
     case USER_TECNICO:
-        printf("*********** Personal Técnico *********** \n");
+        printf("Personal Técnico\n");
         break;
 
     case USER_PROFESOR:
-        printf("*********** Profesor *********** \n");
+        printf("Profesor\n");
         break;
 
     case USER_ESTUDIANTE:
-        printf("*********** Estudiante *********** \n");
+        printf("Estudiante\n");
         break;
 
     default:
-        printf("*********** Desconocido *********** \n");
+        printf("Desconocido\n");
     }
 
     printf("==========================================\n");

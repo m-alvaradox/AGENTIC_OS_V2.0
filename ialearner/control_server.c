@@ -114,7 +114,10 @@ void *ejecutarControlServer(void *arg)
         }
     }
 
-    context->launcherSocket = -1;
+    if (serverFD != -1)
+    {
+        close(serverFD);
+    }
 
     return NULL;
 }

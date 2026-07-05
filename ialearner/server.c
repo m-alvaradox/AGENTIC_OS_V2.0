@@ -6,6 +6,7 @@
 #include <errno.h>
 
 #include <sys/socket.h>
+#include <sys/poll.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
@@ -57,11 +58,39 @@ void aceptarClientes(int server_fd, ServerContext *contexto)
     struct sockaddr_in cliente;
 
     socklen_t cliente_len = sizeof(cliente);
+    struct pollfd pfd;
 
     contexto->server_fd = server_fd;
 
+    pfd.fd = server_fd;
+    pfd.events = POLLIN;
+    pfd.revents = 0;
+
     while (contexto->sessionActiva)
     {
+        int poll_result = poll(&pfd, 1, 200);
+
+        if (poll_result == -1)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+
+            perror("poll");
+            break;
+        }
+
+        if (poll_result == 0)
+        {
+            continue;
+        }
+
+        if ((pfd.revents & POLLIN) == 0)
+        {
+            continue;
+        }
+
         client_fd = accept(
             server_fd,
             (struct sockaddr *)&cliente,
@@ -72,7 +101,9 @@ void aceptarClientes(int server_fd, ServerContext *contexto)
             if (!contexto->sessionActiva ||
                 errno == EBADF ||
                 errno == EINVAL ||
-                errno == ENOTCONN)
+                errno == ENOTCONN ||
+                errno == ECONNABORTED ||
+                errno == EINTR)
             {
                 break;
             }
