@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <string.h>
 
 #include "process_manager.h"
 #include "config.h"
@@ -26,6 +27,7 @@ void inicializarProcessManager(ProcessManager *manager)
     }
 
     manager->siguienteID = 1;
+    manager->siguientePuerto = WINDOW_BASE_PORT;
 }
 
 void liberarProcessManager(ProcessManager *manager)
@@ -35,21 +37,17 @@ void liberarProcessManager(ProcessManager *manager)
         return;
     }
 
-    // Ensure running child processes are terminated and reaped to avoid zombies
     for (int i = 0; i < manager->cantidad; i++)
     {
         pid_t pid = manager->procesos[i].pid;
 
         if (manager->procesos[i].estado == PROCESS_RUNNING)
         {
-            // ask the child to terminate
             kill(pid, SIGTERM);
-            // wait for child to exit (blocking) to ensure no zombies remain
             waitpid(pid, NULL, 0);
         }
         else
         {
-            // attempt to reap any finished children (may return -1 if already reaped)
             waitpid(pid, NULL, WNOHANG);
         }
     }
@@ -59,9 +57,10 @@ void liberarProcessManager(ProcessManager *manager)
     manager->cantidad = 0;
     manager->capacidad = 0;
     manager->siguienteID = 1;
+    manager->siguientePuerto = WINDOW_BASE_PORT;
 }
 
-static int agregarProceso(ProcessManager *manager, pid_t pid)
+static int agregarProceso(ProcessManager *manager, pid_t pid, int puerto)
 {
     if (manager == NULL)
     {
@@ -94,8 +93,8 @@ static int agregarProceso(ProcessManager *manager, pid_t pid)
     }
 
     manager->procesos[manager->cantidad].id = manager->siguienteID++;
-
     manager->procesos[manager->cantidad].pid = pid;
+    manager->procesos[manager->cantidad].puerto = puerto;
     manager->procesos[manager->cantidad].estado = PROCESS_RUNNING;
 
     manager->cantidad++;
@@ -103,7 +102,7 @@ static int agregarProceso(ProcessManager *manager, pid_t pid)
     return 0;
 }
 
-int crearProcesoWindow(ProcessManager *manager)
+int crearProcesoWindow(ProcessManager *manager, int puerto)
 {
     pid_t pid = fork();
 
@@ -115,8 +114,12 @@ int crearProcesoWindow(ProcessManager *manager)
 
     if (pid == 0)
     {
+        char puertoStr[16];
+        snprintf(puertoStr, sizeof(puertoStr), "%d", puerto);
+
         execl(WINDOW_EXECUTABLE,
               "window",
+              puertoStr,
               (char *)NULL);
 
         perror("execl");
@@ -124,12 +127,10 @@ int crearProcesoWindow(ProcessManager *manager)
         exit(EXIT_FAILURE);
     }
 
-    if (agregarProceso(manager, pid) == -1)
+    if (agregarProceso(manager, pid, puerto) == -1)
     {
         kill(pid, SIGTERM);
-
         waitpid(pid, NULL, 0);
-
         return -1;
     }
 
@@ -146,7 +147,7 @@ void actualizarEstados(ProcessManager *manager)
         {
             continue;
         }
-        // waitpid, wnohang flag para consultar estado del pid sin detener el programa (sin bloqueos)
+
         pid_t resultado = waitpid(manager->procesos[i].pid,
                                   &status,
                                   WNOHANG);
@@ -164,9 +165,10 @@ void mostrarProcesos(const ProcessManager *manager)
 
     for (int i = 0; i < manager->cantidad; i++)
     {
-        printf("ID: %d   PID: %d   Estado: %s\n",
+        printf("ID: %d   PID: %d   Puerto: %d   Estado: %s\n",
                manager->procesos[i].id,
                manager->procesos[i].pid,
+               manager->procesos[i].puerto,
                manager->procesos[i].estado == PROCESS_RUNNING
                     ? "RUNNING"
                     : "FINISHED");

@@ -32,13 +32,13 @@ int main(void)
         return 1;
     }
 
-    enviarComando(&context, CMD_START);
+    enviarComando(&context, CMD_START, 0);
 
     ejecutarLauncher(&context);
 
     UserContext usuario;
 
-    if (enviarComando(&context, CMD_END) == -1)
+    if (enviarComando(&context, CMD_END, 0) == -1)
     {
         printf("No fue posible enviar el comando de finalizacion.\n");
 

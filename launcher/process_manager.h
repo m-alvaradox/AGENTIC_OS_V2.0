@@ -12,6 +12,7 @@ typedef struct
 {
     int id;
     pid_t pid;
+    int puerto;
     ProcessState estado;
 } ProcessInfo;
 
@@ -24,6 +25,7 @@ typedef struct
     int capacidad;
 
     int siguienteID;
+    int siguientePuerto;
     
 } ProcessManager;
 
@@ -31,7 +33,7 @@ void inicializarProcessManager(ProcessManager *manager);
 
 void liberarProcessManager(ProcessManager *manager);
 
-int crearProcesoWindow(ProcessManager *manager);
+int crearProcesoWindow(ProcessManager *manager, int puerto);
 
 void actualizarEstados(ProcessManager *manager);
 

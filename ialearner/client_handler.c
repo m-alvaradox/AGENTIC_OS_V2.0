@@ -16,6 +16,11 @@ void *atenderCliente(void *arg)
 
     for (;;)
     {
+        if (!info->contexto->sessionActiva)
+        {
+            break;
+        }
+
         r = recv(info->client_fd,
                  &letra,
                  sizeof(char),

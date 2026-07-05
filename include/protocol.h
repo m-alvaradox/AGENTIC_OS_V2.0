@@ -4,9 +4,18 @@
 typedef enum
 {
     CMD_START = 1,
-    CMD_END
+    CMD_END,
+    CMD_OPEN_WINDOW,
+    CMD_CLOSE_WINDOW
 
 } ControlCommand;
+
+typedef struct
+{
+    ControlCommand comando;
+    int puerto;
+
+} ControlMessage;
 
 typedef enum
 {

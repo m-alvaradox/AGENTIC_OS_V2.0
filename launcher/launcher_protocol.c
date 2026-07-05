@@ -46,22 +46,33 @@ int conectarIALearner(LauncherContext *context)
 
 void desconectarIALearner(LauncherContext *context)
 {
+    if (context == NULL || context->socketIALearner == -1)
+    {
+        return;
+    }
+
     close(context->socketIALearner);
+    context->socketIALearner = -1;
 }
 
 int enviarComando(
         LauncherContext *context,
-        ControlCommand comando)
+        ControlCommand comando,
+        int puerto)
 {
     if (context == NULL)
     {
         return -1;
     }
 
+    ControlMessage mensaje;
+    mensaje.comando = comando;
+    mensaje.puerto = puerto;
+
     ssize_t enviados = send(
             context->socketIALearner,
-            &comando,
-            sizeof(ControlCommand),
+            &mensaje,
+            sizeof(ControlMessage),
             0);
 
     if (enviados == -1)

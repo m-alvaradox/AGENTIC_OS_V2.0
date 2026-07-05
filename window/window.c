@@ -2,13 +2,26 @@
 #include <X11/keysym.h>
 #include <X11/Xutil.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 
 #include "network.h"
 #include "config.h"
 
-int main(void)
+int main(int argc, char **argv)
 {
+    int puerto = DOCUMENT_SERVICE_PORT;
+
+    if (argc > 1)
+    {
+        puerto = atoi(argv[1]);
+
+        if (puerto <= 0)
+        {
+            puerto = DOCUMENT_SERVICE_PORT;
+        }
+    }
+
     Display *display = XOpenDisplay(NULL);
     if (!display)
     {
@@ -16,11 +29,11 @@ int main(void)
         return 1;
     }
 
-    // Connect to the server
-    int socket_fd = conectarServidor();
+    int socket_fd = conectarServidor(puerto);
 
     if (socket_fd == -1)
     {
+        XCloseDisplay(display);
         return 1;
     }
 
@@ -34,7 +47,10 @@ int main(void)
         BlackPixel(display, screen),
         WhitePixel(display, screen));
 
-    XSelectInput(display, window, ExposureMask | KeyPressMask);
+    Atom wmDeleteMessage = XInternAtom(display, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(display, window, &wmDeleteMessage, 1);
+
+    XSelectInput(display, window, ExposureMask | KeyPressMask | StructureNotifyMask);
     XMapWindow(display, window);
 
     XEvent event;
@@ -43,31 +59,45 @@ int main(void)
     {
         XNextEvent(display, &event);
 
+        if (event.type == ClientMessage &&
+            event.xclient.data.l[0] == (long)wmDeleteMessage)
+        {
+            break;
+        }
+
         if (event.type == KeyPress)
         {
-
-            KeySym keysym;  // detect escape, enter, other special keys
-            char buffer[2]; // buffer to hold the character
-            int caracteres; // number of characters read
+            KeySym keysym;
+            char buffer[2];
+            int caracteres;
 
             caracteres = XLookupString(&event.xkey,
                                        buffer,
                                        sizeof(buffer),
                                        &keysym,
                                        NULL);
-            // XLookupString representa que caracter produjo esa tecla considerando shift, capslock, etc.
-            // si usuario pulsa Espacio, buffer[0] = ' ', si pulsa Enter, buffer[0] = '\n', etc.
 
-            // Handle special keys
-            // Si usuario presiona Enter, enviara un newline character to the server
             if (keysym == XK_Escape)
             {
                 break;
             }
 
-            if (keysym == XK_Return) // Enviar salto de linea "\n"
+            if (keysym == XK_m)
             {
-                if(enviarCaracter(socket_fd, '\n') == -1)
+                XIconifyWindow(display, window, screen);
+                continue;
+            }
+
+            if (keysym == XK_r)
+            {
+                XMapWindow(display, window);
+                XRaiseWindow(display, window);
+                continue;
+            }
+
+            if (keysym == XK_Return)
+            {
+                if (enviarCaracter(socket_fd, '\n') == -1)
                 {
                     break;
                 }
@@ -75,13 +105,9 @@ int main(void)
                 continue;
             }
 
-            // Caracter normal
             if (caracteres > 0)
             {
-                // debug
-                printf("Caracter presionado: %c\n", buffer[0]);
-
-                if(enviarCaracter(socket_fd, buffer[0]) == -1)
+                if (enviarCaracter(socket_fd, buffer[0]) == -1)
                 {
                     break;
                 }
@@ -89,7 +115,6 @@ int main(void)
         }
     }
 
-    // Close connection to server
     cerrarConexion(socket_fd);
 
     XDestroyWindow(display, window);

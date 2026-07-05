@@ -51,6 +51,12 @@ int main(void)
 
     contexto.launcherSocket = -1;
     contexto.server_fd = server_fd;
+    contexto.window_count = 0;
+    for (int i = 0; i < MAX_WINDOW_SERVERS; i++)
+    {
+        contexto.window_server_fds[i] = -1;
+        contexto.window_ports[i] = -1;
+    }
     contexto.sessionActiva = true;
 
     if (pthread_create(&controlThread,
@@ -77,6 +83,11 @@ int main(void)
     aceptarClientes(server_fd, &contexto);
 
     pthread_join(controlThread, NULL);
+
+    for (int i = 0; i < contexto.threadManager.cantidad; i++)
+    {
+        shutdown(contexto.threadManager.hilos[i] ? 0 : 0, 0);
+    }
 
     esperarThreads(&contexto.threadManager);
 

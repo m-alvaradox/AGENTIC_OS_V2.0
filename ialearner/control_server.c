@@ -10,6 +10,7 @@
 #include "control_server.h"
 #include "config.h"
 #include "protocol.h"
+#include "server.h"
 
 void *ejecutarControlServer(void *arg)
 {
@@ -75,23 +76,98 @@ void *ejecutarControlServer(void *arg)
 
     printf("Launcher conectado.\n");
 
-    ControlCommand comando;
+    ControlMessage mensaje;
     int seguir = 1;
     ssize_t r;
 
     while (seguir)
     {
         r = recv(launcherFD,
-                 &comando,
-                 sizeof(ControlCommand),
+                 &mensaje,
+                 sizeof(ControlMessage),
                  0);
 
         if (r > 0)
         {
-            switch (comando)
+            switch (mensaje.comando)
             {
             case CMD_START:
                 printf("Sesion iniciada.\n");
+                break;
+
+            case CMD_OPEN_WINDOW:
+                printf("Abrir ventana en puerto %d.\n", mensaje.puerto);
+
+                if (mensaje.puerto <= 0)
+                {
+                    break;
+                }
+
+                if (context->window_count >= MAX_WINDOW_SERVERS)
+                {
+                    fprintf(stderr, "No hay espacio para mas ventanas.\n");
+                    break;
+                }
+
+                {
+                    int server_fd = iniciarServidor(mensaje.puerto);
+                    if (server_fd == -1)
+                    {
+                        break;
+                    }
+
+                    context->window_server_fds[context->window_count] = server_fd;
+                    context->window_ports[context->window_count] = mensaje.puerto;
+                    context->window_count++;
+
+                    WindowServiceArgs *args = malloc(sizeof(*args));
+                    if (args == NULL)
+                    {
+                        perror("malloc");
+                        close(server_fd);
+                        break;
+                    }
+
+                    args->server_fd = server_fd;
+                    args->puerto = mensaje.puerto;
+                    args->contexto = context;
+
+                    pthread_t hilo;
+                    if (pthread_create(&hilo,
+                                       NULL,
+                                       aceptarClientesVentana,
+                                       args) != 0)
+                    {
+                        perror("pthread_create");
+                        close(server_fd);
+                        free(args);
+                        break;
+                    }
+
+                    if (agregarThread(&context->threadManager, hilo) == -1)
+                    {
+                        pthread_cancel(hilo);
+                        pthread_join(hilo, NULL);
+                        close(server_fd);
+                        free(args);
+                        break;
+                    }
+                }
+                break;
+
+            case CMD_CLOSE_WINDOW:
+                printf("Cerrar ventana en puerto %d.\n", mensaje.puerto);
+
+                for (int i = 0; i < context->window_count; i++)
+                {
+                    if (context->window_ports[i] == mensaje.puerto &&
+                        context->window_server_fds[i] != -1)
+                    {
+                        close(context->window_server_fds[i]);
+                        context->window_server_fds[i] = -1;
+                        break;
+                    }
+                }
                 break;
 
             case CMD_END:
@@ -103,6 +179,15 @@ void *ejecutarControlServer(void *arg)
                 {
                     close(context->server_fd);
                     context->server_fd = -1;
+                }
+
+                for (int i = 0; i < context->window_count; i++)
+                {
+                    if (context->window_server_fds[i] != -1)
+                    {
+                        close(context->window_server_fds[i]);
+                        context->window_server_fds[i] = -1;
+                    }
                 }
 
                 seguir = 0;
@@ -119,15 +204,13 @@ void *ejecutarControlServer(void *arg)
 
         if (r == 0)
         {
-            // launcher closed connection
             printf("Launcher cerró la conexión.\n");
             break;
         }
 
-        // r == -1
         if (errno == EINTR)
         {
-            continue; // retry
+            continue;
         }
 
         perror("recv");

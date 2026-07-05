@@ -10,7 +10,8 @@ void desconectarIALearner(LauncherContext *context);
 
 int enviarComando(
     LauncherContext *context,
-    ControlCommand comando
+    ControlCommand comando,
+    int puerto
 );
 
 int recibirContexto(

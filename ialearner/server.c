@@ -51,6 +51,52 @@ int iniciarServidor(int puerto)
     return server_fd;
 }
 
+static void manejarCliente(int client_fd, ServerContext *contexto)
+{
+    printf("Nuevo cliente conectado.\n");
+
+    ClientInfo *info = malloc(sizeof(ClientInfo));
+
+    if (info == NULL)
+    {
+        perror("malloc");
+        close(client_fd);
+        return;
+    }
+
+    info->client_fd = client_fd;
+    info->documento = NULL;
+    info->longitud = 0;
+    info->capacidad = 0;
+    info->contexto = contexto;
+
+    pthread_t hilo;
+
+    if (pthread_create(&hilo,
+                       NULL,
+                       atenderCliente,
+                       info) != 0)
+    {
+        perror("pthread_create");
+
+        close(client_fd);
+
+        free(info);
+
+        return;
+    }
+
+    if (agregarThread(&contexto->threadManager, hilo) == -1)
+    {
+        pthread_cancel(hilo);
+        pthread_join(hilo, NULL);
+
+        close(client_fd);
+
+        free(info);
+    }
+}
+
 void aceptarClientes(int server_fd, ServerContext *contexto)
 {
     int client_fd;
@@ -112,52 +158,47 @@ void aceptarClientes(int server_fd, ServerContext *contexto)
             continue;
         }
 
-        printf("Nuevo cliente conectado.\n");
-
-        ClientInfo *info = malloc(sizeof(ClientInfo));
-
-        if (info == NULL)
-        {
-            perror("malloc");
-            close(client_fd);
-            continue;
-        }
-
-        info->client_fd = client_fd;
-        info->documento = NULL;
-        info->longitud = 0;
-        info->capacidad = 0;
-        info->contexto = contexto;
-
-        pthread_t hilo;
-
-        if (pthread_create(&hilo,
-                           NULL,
-                           atenderCliente,
-                           info) != 0)
-        {
-            perror("pthread_create");
-
-            close(client_fd);
-
-            free(info);
-
-            continue;
-        }
-
-        if (agregarThread(&contexto->threadManager, hilo) == -1)
-        {
-            // evitar hilos huerfanos despues del fallo
-            // solicitud para terminar el hilo
-            pthread_cancel(hilo);
-
-            pthread_join(hilo, NULL);
-
-            close(client_fd);
-
-            free(info);
-
-            continue;
-        }
+        manejarCliente(client_fd, contexto);
     }
+}
+
+void *aceptarClientesVentana(void *arg)
+{
+    WindowServiceArgs *args = (WindowServiceArgs *)arg;
+
+    if (args == NULL || args->contexto == NULL)
+    {
+        return NULL;
+    }
+
+    int server_fd = args->server_fd;
+    ServerContext *contexto = args->contexto;
+    struct sockaddr_in cliente;
+    socklen_t cliente_len = sizeof(cliente);
+
+    free(args);
+
+    while (contexto->sessionActiva)
+    {
+        int client_fd = accept(server_fd,
+                               (struct sockaddr *)&cliente,
+                               &cliente_len);
+
+        if (client_fd == -1)
+        {
+            if (errno == EINTR || errno == EBADF || errno == EINVAL ||
+                errno == ENOTCONN || errno == ECONNABORTED)
+            {
+                break;
+            }
+
+            perror("accept ventana");
+            break;
+        }
+
+        manejarCliente(client_fd, contexto);
+    }
+
+    close(server_fd);
+    return NULL;
 }

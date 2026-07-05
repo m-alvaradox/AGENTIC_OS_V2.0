@@ -8,7 +8,7 @@
 #include "network.h"
 #include "config.h"
 
-int conectarServidor(void)
+int conectarServidor(int puerto)
 {
     int socket_fd;
     struct sockaddr_in servidor;
@@ -24,7 +24,7 @@ int conectarServidor(void)
     memset(&servidor, 0, sizeof(servidor)); // limpiar campos de la estructura
 
     servidor.sin_family = AF_INET;
-    servidor.sin_port = htons(DOCUMENT_SERVICE_PORT);
+    servidor.sin_port = htons(puerto);
     servidor.sin_addr.s_addr = inet_addr(SERVER_IP);
 
     // Connect to the server
