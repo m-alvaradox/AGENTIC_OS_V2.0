@@ -84,11 +84,6 @@ int main(void)
 
     pthread_join(controlThread, NULL);
 
-    for (int i = 0; i < contexto.threadManager.cantidad; i++)
-    {
-        shutdown(contexto.threadManager.hilos[i] ? 0 : 0, 0);
-    }
-
     esperarThreads(&contexto.threadManager);
 
     if (contexto.launcherSocket != -1)

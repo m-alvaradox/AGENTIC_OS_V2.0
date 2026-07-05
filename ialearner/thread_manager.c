@@ -81,6 +81,7 @@ void esperarThreads(ThreadManager *manager)
 
     for (int i = 0; i < manager->cantidad; i++)
     {
-        pthread_join(manager->hilos[i], NULL); // wait for termination
+        pthread_cancel(manager->hilos[i]);
+        pthread_join(manager->hilos[i], NULL);
     }
 }
