@@ -88,6 +88,7 @@ void ejecutarLauncher(LauncherContext *context)
 
             case 4:
                 printf("Finalizando...\n");
+                cerrarTodasVentanas(context);
                 break;
 
             default:
