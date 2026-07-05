@@ -3,6 +3,7 @@
 #include <X11/Xutil.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <sys/socket.h>
 
 #include "network.h"
@@ -11,6 +12,8 @@
 int main(int argc, char **argv)
 {
     int puerto = DOCUMENT_SERVICE_PORT;
+
+    signal(SIGPIPE, SIG_IGN);
 
     if (argc > 1)
     {

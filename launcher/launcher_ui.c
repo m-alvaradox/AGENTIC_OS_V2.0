@@ -35,6 +35,12 @@ static void cerrarTodasVentanas(LauncherContext *context)
     actualizarEstados(&context->processManager);
 }
 
+static void manejarIALearnerNoDisponible(LauncherContext *context)
+{
+    printf("IALearner no esta disponible. Cerrando ventanas locales...\n");
+    cerrarTodasVentanas(context);
+}
+
 void ejecutarLauncher(LauncherContext *context)
 {
     int opcion;
@@ -42,6 +48,12 @@ void ejecutarLauncher(LauncherContext *context)
     do
     {
         actualizarEstados(&context->processManager);
+
+        if (!context->ialearnerDisponible)
+        {
+            manejarIALearnerNoDisponible(context);
+            break;
+        }
 
         printf("\n===== AGENTIC OS =====\n");
         printf("1. Crear Window\n");
@@ -62,6 +74,8 @@ void ejecutarLauncher(LauncherContext *context)
                     solicitarVentana(context, &puerto) == -1)
                 {
                     printf("No fue posible abrir el puerto de la ventana.\n");
+                    manejarIALearnerNoDisponible(context);
+                    opcion = 4;
                     break;
                 }
 

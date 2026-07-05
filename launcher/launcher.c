@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <signal.h>
 
 #include "launcher_ui.h"
 #include "process_manager.h"
@@ -10,6 +11,7 @@ static void inicializarLauncherContext(LauncherContext *context)
 
     inicializarProcessManager(&context->processManager);
     context->socketIALearner = -1;
+    context->ialearnerDisponible = 0;
 }
 
 static void liberarLauncherContext(LauncherContext *context)
@@ -20,6 +22,8 @@ static void liberarLauncherContext(LauncherContext *context)
 int main(void)
 {
     LauncherContext context;
+
+    signal(SIGPIPE, SIG_IGN);
 
     inicializarLauncherContext(&context);
 
@@ -32,11 +36,21 @@ int main(void)
         return 1;
     }
 
+    context.ialearnerDisponible = 1;
+
     enviarComando(&context, CMD_START, 0);
 
     ejecutarLauncher(&context);
 
     UserContext usuario;
+
+    if (!context.ialearnerDisponible)
+    {
+        desconectarIALearner(&context);
+        liberarLauncherContext(&context);
+
+        return 1;
+    }
 
     if (enviarComando(&context, CMD_END, 0) == -1)
     {

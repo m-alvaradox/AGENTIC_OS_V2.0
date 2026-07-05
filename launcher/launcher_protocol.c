@@ -37,9 +37,13 @@ int conectarIALearner(LauncherContext *context)
         perror("connect");
 
         close(context->socketIALearner);
+        context->socketIALearner = -1;
+        context->ialearnerDisponible = 0;
 
         return -1;
     }
+
+    context->ialearnerDisponible = 1;
 
     return 0;
 }
@@ -53,6 +57,7 @@ void desconectarIALearner(LauncherContext *context)
 
     close(context->socketIALearner);
     context->socketIALearner = -1;
+    context->ialearnerDisponible = 0;
 }
 
 int enviarComando(
@@ -60,7 +65,9 @@ int enviarComando(
         ControlCommand comando,
         int puerto)
 {
-    if (context == NULL)
+    if (context == NULL ||
+        context->socketIALearner == -1 ||
+        !context->ialearnerDisponible)
     {
         return -1;
     }
@@ -78,6 +85,7 @@ int enviarComando(
     if (enviados == -1)
     {
         perror("send");
+        desconectarIALearner(context);
         return -1;
     }
 
@@ -111,6 +119,7 @@ int solicitarVentana(LauncherContext *context, int *puerto)
             perror("recv");
         }
 
+        desconectarIALearner(context);
         return -1;
     }
 
@@ -128,7 +137,10 @@ int recibirContexto(
         LauncherContext *context,
         UserContext *contexto)
 {
-    if (context == NULL || contexto == NULL)
+    if (context == NULL ||
+        contexto == NULL ||
+        context->socketIALearner == -1 ||
+        !context->ialearnerDisponible)
     {
         return -1;
     }
@@ -142,7 +154,13 @@ int recibirContexto(
     if (recibidos == -1)
     {
         perror("recv");
+        desconectarIALearner(context);
         return -1;
+    }
+
+    if (recibidos == 0)
+    {
+        desconectarIALearner(context);
     }
 
     return (int)recibidos;
