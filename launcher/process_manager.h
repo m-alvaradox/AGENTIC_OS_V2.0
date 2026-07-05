@@ -10,6 +10,7 @@ typedef enum {
 
 typedef struct
 {
+    int id;
     pid_t pid;
     ProcessState estado;
 } ProcessInfo;
@@ -19,7 +20,11 @@ typedef struct
     ProcessInfo *procesos;
 
     int cantidad;
+
     int capacidad;
+
+    int siguienteID;
+    
 } ProcessManager;
 
 void inicializarProcessManager(ProcessManager *manager);

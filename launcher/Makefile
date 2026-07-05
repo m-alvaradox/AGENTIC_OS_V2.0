@@ -1,17 +1,23 @@
+# Makefile - Launcher
+
 CC=gcc
 
-CFLAGS=-Wall -Wextra -I../include
+CFLAGS = -Wall -Wextra -g -I../include
 
-OBJ=launcher.o \
-    launcher_ui.o \
-    process_manager.o \
-    launcher_protocol.o
+TARGET = launcher
 
-launcher: $(OBJ)
-	$(CC) $(OBJ) -o launcher
+SRCS = launcher.c launcher_ui.c process_manager.c launcher_protocol.c
+OBJS = $(SRCS:.c=.o)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f *.o launcher
+	rm -f $(OBJS) $(TARGET)
+
+rebuild: clean all

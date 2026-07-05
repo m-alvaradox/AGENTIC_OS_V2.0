@@ -1,6 +1,8 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <signal.h>
 
 #include "process_manager.h"
 #include "config.h"
@@ -12,6 +14,8 @@ void inicializarProcessManager(ProcessManager *manager)
 
     manager->procesos = malloc(
         sizeof(ProcessInfo) * manager->capacidad);
+
+    manager->siguienteID = 1;
 }
 
 void liberarProcessManager(ProcessManager *manager)
@@ -36,6 +40,8 @@ static int agregarProceso(ProcessManager *manager, pid_t pid)
         manager->procesos = temp;
     }
 
+    manager->procesos[manager->cantidad].id = manager->siguienteID++;
+
     manager->procesos[manager->cantidad].pid = pid;
     manager->procesos[manager->cantidad].estado = PROCESS_RUNNING;
 
@@ -46,7 +52,6 @@ static int agregarProceso(ProcessManager *manager, pid_t pid)
 
 int crearProcesoWindow(ProcessManager *manager)
 {
-
     pid_t pid = fork();
 
     if (pid < 0)
@@ -68,6 +73,10 @@ int crearProcesoWindow(ProcessManager *manager)
 
     if (agregarProceso(manager, pid) == -1)
     {
+        kill(pid, SIGTERM);
+
+        waitpid(pid, NULL, 0);
+
         return -1;
     }
 
@@ -98,16 +107,17 @@ void actualizarEstados(ProcessManager *manager)
 
 void mostrarProcesos(const ProcessManager *manager)
 {
-    printf("\n========== Procesos ==========\n");
+    printf("\n============= Procesos ==============\n");
 
     for (int i = 0; i < manager->cantidad; i++)
     {
-        printf("PID: %d   Estado: %s\n",
+        printf("ID: %d   PID: %d   Estado: %s\n",
+               manager->procesos[i].id,
                manager->procesos[i].pid,
                manager->procesos[i].estado == PROCESS_RUNNING
                     ? "RUNNING"
                     : "FINISHED");
     }
 
-    printf("==============================\n");
+    printf("=====================================\n");
 }
