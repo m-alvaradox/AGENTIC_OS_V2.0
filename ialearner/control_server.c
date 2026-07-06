@@ -39,6 +39,8 @@ static void cerrarServidoresVentana(SessionContext *session)
         return;
     }
 
+    pthread_mutex_lock(&session->sessionMutex);
+
     session->sessionActiva = false;
 
     for (int i = 0; i < session->window_count; i++)
@@ -53,6 +55,8 @@ static void cerrarServidoresVentana(SessionContext *session)
     }
 
     session->window_count = 0;
+
+    pthread_mutex_unlock(&session->sessionMutex);
 }
 
 static void enviarRespuestaVentana(SessionContext *session,
@@ -99,12 +103,17 @@ static void enviarPerfilUsuario(SessionContext *session)
 
 static void abrirVentana(SessionContext *session)
 {
+    pthread_mutex_lock(&session->sessionMutex);
+
     if (session->window_count >= MAX_WINDOW_SERVERS)
     {
+        pthread_mutex_unlock(&session->sessionMutex);
         fprintf(stderr, "No hay espacio para mas ventanas.\n");
         enviarRespuestaVentana(session, 0, -1);
         return;
     }
+
+    pthread_mutex_unlock(&session->sessionMutex);
 
     int puerto = asignarPuertoVentana(session->server);
 
@@ -116,10 +125,6 @@ static void abrirVentana(SessionContext *session)
         enviarRespuestaVentana(session, 0, -1);
         return;
     }
-
-    session->window_server_fds[session->window_count] = server_fd;
-    session->window_ports[session->window_count] = puerto;
-    session->window_count++;
 
     WindowServiceArgs *args = malloc(sizeof(*args));
     if (args == NULL)
@@ -134,6 +139,25 @@ static void abrirVentana(SessionContext *session)
     args->puerto = puerto;
     args->session = session;
 
+    pthread_mutex_lock(&session->sessionMutex);
+
+    if (session->window_count >= MAX_WINDOW_SERVERS ||
+        !session->sessionActiva)
+    {
+        pthread_mutex_unlock(&session->sessionMutex);
+        close(server_fd);
+        free(args);
+        enviarRespuestaVentana(session, 0, -1);
+        return;
+    }
+
+    int indiceVentana = session->window_count;
+    session->window_server_fds[indiceVentana] = server_fd;
+    session->window_ports[indiceVentana] = puerto;
+    session->window_count++;
+
+    pthread_mutex_unlock(&session->sessionMutex);
+
     pthread_t hilo;
     if (pthread_create(&hilo,
                        NULL,
@@ -143,6 +167,11 @@ static void abrirVentana(SessionContext *session)
         perror("pthread_create");
         close(server_fd);
         free(args);
+        pthread_mutex_lock(&session->sessionMutex);
+        session->window_count--;
+        session->window_server_fds[indiceVentana] = -1;
+        session->window_ports[indiceVentana] = -1;
+        pthread_mutex_unlock(&session->sessionMutex);
         enviarRespuestaVentana(session, 0, -1);
         return;
     }
@@ -152,6 +181,11 @@ static void abrirVentana(SessionContext *session)
         pthread_cancel(hilo);
         pthread_join(hilo, NULL);
         close(server_fd);
+        pthread_mutex_lock(&session->sessionMutex);
+        session->window_count--;
+        session->window_server_fds[indiceVentana] = -1;
+        session->window_ports[indiceVentana] = -1;
+        pthread_mutex_unlock(&session->sessionMutex);
         enviarRespuestaVentana(session, 0, -1);
         return;
     }
@@ -163,6 +197,8 @@ static void cerrarVentana(SessionContext *session, int puerto)
 {
     printf("Cerrar ventana en puerto %d.\n", puerto);
 
+    pthread_mutex_lock(&session->sessionMutex);
+
     for (int i = 0; i < session->window_count; i++)
     {
         if (session->window_ports[i] == puerto &&
@@ -173,6 +209,8 @@ static void cerrarVentana(SessionContext *session, int puerto)
             break;
         }
     }
+
+    pthread_mutex_unlock(&session->sessionMutex);
 }
 
 static void *atenderLauncher(void *arg)

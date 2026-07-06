@@ -120,7 +120,7 @@ void aceptarClientes(int server_fd, SessionContext *session)
     pfd.events = POLLIN;
     pfd.revents = 0;
 
-    while (session->sessionActiva)
+    while (sessionEstaActiva(session))
     {
         int poll_result = poll(&pfd, 1, 200);
 
@@ -152,7 +152,7 @@ void aceptarClientes(int server_fd, SessionContext *session)
 
         if (client_fd == -1)
         {
-            if (!session->sessionActiva ||
+            if (!sessionEstaActiva(session) ||
                 errno == EBADF ||
                 errno == EINVAL ||
                 errno == ENOTCONN ||
@@ -186,7 +186,7 @@ void *aceptarClientesVentana(void *arg)
 
     free(args);
 
-    while (session->sessionActiva)
+    while (sessionEstaActiva(session))
     {
         int client_fd = accept(server_fd,
                                (struct sockaddr *)&cliente,

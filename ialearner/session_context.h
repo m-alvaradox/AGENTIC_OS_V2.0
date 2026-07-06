@@ -16,6 +16,7 @@ typedef struct
     UserProfile perfil;
     pthread_mutex_t perfilMutex;
     pthread_mutex_t printMutex;
+    pthread_mutex_t sessionMutex;
     ThreadManager threadManager;
 
     int launcherSocket;
@@ -32,5 +33,10 @@ int inicializarSessionContext(SessionContext *session,
                               int launcherSocket);
 
 void liberarSessionContext(SessionContext *session);
+
+bool sessionEstaActiva(SessionContext *session);
+
+void establecerSessionActiva(SessionContext *session,
+                             bool activa);
 
 #endif

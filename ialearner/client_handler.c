@@ -17,7 +17,7 @@ void *atenderCliente(void *arg)
 
     for (;;)
     {
-        if (!info->session->sessionActiva)
+        if (!sessionEstaActiva(info->session))
         {
             break;
         }

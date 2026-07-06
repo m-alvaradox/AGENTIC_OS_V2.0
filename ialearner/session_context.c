@@ -41,6 +41,15 @@ int inicializarSessionContext(SessionContext *session,
         return -1;
     }
 
+    if (pthread_mutex_init(&session->sessionMutex, NULL) != 0)
+    {
+        perror("pthread_mutex_init");
+        pthread_mutex_destroy(&session->printMutex);
+        pthread_mutex_destroy(&session->perfilMutex);
+        liberarThreadManager(&session->threadManager);
+        return -1;
+    }
+
     return 0;
 }
 
@@ -51,6 +60,8 @@ void liberarSessionContext(SessionContext *session)
         return;
     }
 
+    pthread_mutex_lock(&session->sessionMutex);
+
     for (int i = 0; i < session->window_count; i++)
     {
         if (session->window_server_fds[i] != -1)
@@ -59,6 +70,8 @@ void liberarSessionContext(SessionContext *session)
             session->window_server_fds[i] = -1;
         }
     }
+
+    pthread_mutex_unlock(&session->sessionMutex);
 
     unirThreads(&session->threadManager);
     liberarThreadManager(&session->threadManager);
@@ -69,6 +82,36 @@ void liberarSessionContext(SessionContext *session)
         session->launcherSocket = -1;
     }
 
+    pthread_mutex_destroy(&session->sessionMutex);
     pthread_mutex_destroy(&session->printMutex);
     pthread_mutex_destroy(&session->perfilMutex);
+}
+
+bool sessionEstaActiva(SessionContext *session)
+{
+    bool activa;
+
+    if (session == NULL)
+    {
+        return false;
+    }
+
+    pthread_mutex_lock(&session->sessionMutex);
+    activa = session->sessionActiva;
+    pthread_mutex_unlock(&session->sessionMutex);
+
+    return activa;
+}
+
+void establecerSessionActiva(SessionContext *session,
+                             bool activa)
+{
+    if (session == NULL)
+    {
+        return;
+    }
+
+    pthread_mutex_lock(&session->sessionMutex);
+    session->sessionActiva = activa;
+    pthread_mutex_unlock(&session->sessionMutex);
 }
