@@ -6,6 +6,7 @@
 
 #include "client_handler.h"
 #include "classifier.h"
+#include "config.h"
 
 void *atenderCliente(void *arg)
 {
@@ -139,9 +140,6 @@ void procesarDocumento(ClientInfo *info)
 
     info->documento[info->longitud] = '\0'; // Null-terminate the string
 
-    printf("\n========== DOCUMENTO RECIBIDO ==========\n");
-    printf("%s\n", info->documento);
-
     ClassificationResult resultado;
 
     resultado = clasificarDocumento(info->documento,
@@ -149,7 +147,13 @@ void procesarDocumento(ClientInfo *info)
                         info->session->server->articulo,
                         info->session->server->reporte);
 
+#if SHOW_DOCUMENT_DEBUG
+    pthread_mutex_lock(&info->session->printMutex);
+    printf("\n========== DOCUMENTO RECIBIDO ==========\n");
+    printf("%s\n", info->documento);
     imprimirClasificacion(&resultado);
+    pthread_mutex_unlock(&info->session->printMutex);
+#endif
 
     pthread_mutex_lock(&info->session->perfilMutex);
     registrarDocumento(&info->session->perfil, resultado.clase);

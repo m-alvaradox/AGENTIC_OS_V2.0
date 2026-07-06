@@ -15,6 +15,7 @@ typedef struct
 
     UserProfile perfil;
     pthread_mutex_t perfilMutex;
+    pthread_mutex_t printMutex;
     ThreadManager threadManager;
 
     int launcherSocket;

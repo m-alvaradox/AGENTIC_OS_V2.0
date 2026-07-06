@@ -37,6 +37,7 @@
 #define UMBRAL_DOMINANTE      0.60
 #define UMBRAL_COMPLEMENTARIO 0.40
 #define UMBRAL_MINIMO         0.20
+#define SHOW_DOCUMENT_DEBUG   1
 
 /*Launcher*/
 //Process Manager
