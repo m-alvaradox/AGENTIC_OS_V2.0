@@ -40,16 +40,48 @@ static int obtenerDetectionThreads(int argc, char **argv)
     return (int)valor;
 }
 
+static int obtenerCpuCount(void)
+{
+    long cpus;
+
+    cpus = sysconf(_SC_NPROCESSORS_ONLN);
+
+    if (cpus <= 0)
+    {
+        return 1;
+    }
+
+    if (cpus > MAX_DETECTION_THREADS)
+    {
+        return MAX_DETECTION_THREADS;
+    }
+
+    return (int)cpus;
+}
+
 int main(int argc, char **argv)
 {
     pthread_t controlThread;
     ServerContext contexto;
     int detectionThreads;
+    int cpuCount;
 
     detectionThreads = obtenerDetectionThreads(argc, argv);
     if (detectionThreads == -1)
     {
         return EXIT_FAILURE;
+    }
+
+    cpuCount = obtenerCpuCount();
+
+    if (detectionThreads > cpuCount)
+    {
+        printf("P=%d excede los CPUs disponibles (%d). "
+               "Se usara P=%d.\n",
+               detectionThreads,
+               cpuCount,
+               cpuCount);
+        detectionThreads = cpuCount;
     }
 
     memset(&contexto, 0, sizeof(contexto));
@@ -86,6 +118,7 @@ int main(int argc, char **argv)
 
     contexto.server_fd = -1;
     contexto.detectionThreads = detectionThreads;
+    contexto.cpuCount = cpuCount;
     contexto.siguientePuertoVentana = WINDOW_BASE_PORT;
 
     if (pthread_create(&controlThread,
@@ -106,6 +139,7 @@ int main(int argc, char **argv)
 
     printf("=== IA Learner Data Center ===\n");
     printf("Servidor del Data Center iniciado...\n");
+    printf("CPUs disponibles: %d\n", contexto.cpuCount);
     printf("Hilos de deteccion por lote (P): %d\n",
            contexto.detectionThreads);
     printf("Esperando conexiones...\n\n");

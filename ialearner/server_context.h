@@ -16,6 +16,7 @@ typedef struct {
 
     int server_fd;
     int detectionThreads;
+    int cpuCount;
     int siguientePuertoVentana;
     pthread_mutex_t puertoMutex;
     
