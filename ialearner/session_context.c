@@ -19,6 +19,13 @@ int inicializarSessionContext(SessionContext *session,
 
     inicializarPerfil(&session->perfil);
     inicializarThreadManager(&session->threadManager);
+    session->detectionThreads = DEFAULT_DETECTION_THREADS;
+
+    if (inicializarSentenceQueue(&session->sentenceQueue) == -1)
+    {
+        liberarThreadManager(&session->threadManager);
+        return -1;
+    }
 
     for (int i = 0; i < MAX_WINDOW_SERVERS; i++)
     {
@@ -29,6 +36,7 @@ int inicializarSessionContext(SessionContext *session,
     if (pthread_mutex_init(&session->perfilMutex, NULL) != 0)
     {
         perror("pthread_mutex_init");
+        liberarSentenceQueue(&session->sentenceQueue);
         liberarThreadManager(&session->threadManager);
         return -1;
     }
@@ -37,6 +45,7 @@ int inicializarSessionContext(SessionContext *session,
     {
         perror("pthread_mutex_init");
         pthread_mutex_destroy(&session->perfilMutex);
+        liberarSentenceQueue(&session->sentenceQueue);
         liberarThreadManager(&session->threadManager);
         return -1;
     }
@@ -46,6 +55,7 @@ int inicializarSessionContext(SessionContext *session,
         perror("pthread_mutex_init");
         pthread_mutex_destroy(&session->printMutex);
         pthread_mutex_destroy(&session->perfilMutex);
+        liberarSentenceQueue(&session->sentenceQueue);
         liberarThreadManager(&session->threadManager);
         return -1;
     }
@@ -75,6 +85,7 @@ void liberarSessionContext(SessionContext *session)
 
     unirThreads(&session->threadManager);
     liberarThreadManager(&session->threadManager);
+    liberarSentenceQueue(&session->sentenceQueue);
 
     if (session->launcherSocket != -1)
     {

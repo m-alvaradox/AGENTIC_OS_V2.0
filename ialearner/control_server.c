@@ -11,6 +11,7 @@
 #include "config.h"
 #include "protocol.h"
 #include "server.h"
+#include "client_handler.h"
 #include "session_context.h"
 #include "user_profile.h"
 
@@ -269,6 +270,7 @@ static void *atenderLauncher(void *arg)
                 printf("Sesion finalizada.\n");
 
                 cerrarServidoresVentana(&session);
+                procesarColaPendiente(&session, true);
                 enviarPerfilUsuario(&session);
 
                 seguir = 0;

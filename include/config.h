@@ -39,6 +39,10 @@
 #define UMBRAL_MINIMO         0.20
 #define SHOW_DOCUMENT_DEBUG   1
 
+/*Deteccion concurrente*/
+#define DEFAULT_DETECTION_THREADS       2
+#define INITIAL_SENTENCE_QUEUE_CAPACITY 16
+
 /*Launcher*/
 //Process Manager
 #define WINDOW_EXECUTABLE "../window/window"

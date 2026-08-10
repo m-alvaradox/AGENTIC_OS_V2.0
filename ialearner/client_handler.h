@@ -1,6 +1,7 @@
 #ifndef CLIENT_HANDLER_H
 #define CLIENT_HANDLER_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include "session_context.h"
 
@@ -19,5 +20,8 @@ void liberarCliente(ClientInfo *info);
 int agregarCaracter(ClientInfo *info, char letra);
 
 void procesarDocumento(ClientInfo *info);
+
+void procesarColaPendiente(SessionContext *session,
+                            bool forzar);
 
 #endif

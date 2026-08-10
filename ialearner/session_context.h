@@ -6,6 +6,7 @@
 
 #include "config.h"
 #include "server_context.h"
+#include "sentence_queue.h"
 #include "thread_manager.h"
 #include "user_profile.h"
 
@@ -18,6 +19,8 @@ typedef struct
     pthread_mutex_t printMutex;
     pthread_mutex_t sessionMutex;
     ThreadManager threadManager;
+    SentenceQueue sentenceQueue;
+    int detectionThreads;
 
     int launcherSocket;
     int window_server_fds[MAX_WINDOW_SERVERS];

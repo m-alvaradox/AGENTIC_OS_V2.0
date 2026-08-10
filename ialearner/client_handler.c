@@ -8,6 +8,93 @@
 #include "classifier.h"
 #include "config.h"
 
+static void clasificarOracion(SessionContext *session,
+                              const char *oracion)
+{
+    ClassificationResult resultado;
+
+    if (session == NULL || oracion == NULL)
+    {
+        return;
+    }
+
+    resultado = clasificarDocumento(oracion,
+                                    session->server->correo,
+                                    session->server->articulo,
+                                    session->server->reporte);
+
+#if SHOW_DOCUMENT_DEBUG
+    pthread_mutex_lock(&session->printMutex);
+    printf("\n========== ORACION RECIBIDA ==========\n");
+    printf("%s\n", oracion);
+    imprimirClasificacion(&resultado);
+    pthread_mutex_unlock(&session->printMutex);
+#endif
+
+    pthread_mutex_lock(&session->perfilMutex);
+    registrarDocumento(&session->perfil, resultado.clase);
+    pthread_mutex_unlock(&session->perfilMutex);
+}
+
+void procesarColaPendiente(SessionContext *session,
+                            bool forzar)
+{
+    int p;
+    char **oraciones;
+    int extraidas;
+
+    if (session == NULL)
+    {
+        return;
+    }
+
+    p = session->detectionThreads;
+    if (p <= 0)
+    {
+        p = 1;
+    }
+
+    if (!forzar &&
+        cantidadOraciones(&session->sentenceQueue) < p)
+    {
+        return;
+    }
+
+    oraciones = calloc((size_t)p, sizeof(char *));
+    if (oraciones == NULL)
+    {
+        perror("calloc");
+        return;
+    }
+
+    while (forzar ||
+           cantidadOraciones(&session->sentenceQueue) >= p)
+    {
+        extraidas = extraerOraciones(&session->sentenceQueue,
+                                     oraciones,
+                                     p);
+
+        if (extraidas == 0)
+        {
+            break;
+        }
+
+        for (int i = 0; i < extraidas; i++)
+        {
+            clasificarOracion(session, oraciones[i]);
+            free(oraciones[i]);
+            oraciones[i] = NULL;
+        }
+
+        if (!forzar)
+        {
+            break;
+        }
+    }
+
+    free(oraciones);
+}
+
 void *atenderCliente(void *arg)
 {
     ClientInfo *info = (ClientInfo *)arg;
@@ -154,24 +241,13 @@ void procesarDocumento(ClientInfo *info)
 
     info->documento[info->longitud] = '\0'; // Null-terminate the string
 
-    ClassificationResult resultado;
-
-    resultado = clasificarDocumento(info->documento,
-                        info->session->server->correo,
-                        info->session->server->articulo,
-                        info->session->server->reporte);
-
-#if SHOW_DOCUMENT_DEBUG
-    pthread_mutex_lock(&info->session->printMutex);
-    printf("\n========== DOCUMENTO RECIBIDO ==========\n");
-    printf("%s\n", info->documento);
-    imprimirClasificacion(&resultado);
-    pthread_mutex_unlock(&info->session->printMutex);
-#endif
-
-    pthread_mutex_lock(&info->session->perfilMutex);
-    registrarDocumento(&info->session->perfil, resultado.clase);
-    pthread_mutex_unlock(&info->session->perfilMutex);
+    if (encolarOracion(&info->session->sentenceQueue,
+                       info->documento) == -1)
+    {
+        perror("encolarOracion");
+        return;
+    }
 
     info->longitud = 0;
+    procesarColaPendiente(info->session, false);
 }
