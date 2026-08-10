@@ -15,6 +15,45 @@ typedef struct
     ClassificationResult resultado;
 } DetectionTask;
 
+static const char *nombreClaseDocumento(DocumentClass clase)
+{
+    switch (clase)
+    {
+    case DOC_CORREO:
+        return "Correo electronico";
+
+    case DOC_ARTICULO:
+        return "Articulo cientifico";
+
+    case DOC_REPORTE:
+        return "Reporte";
+
+    default:
+        return "Sin clasificar";
+    }
+}
+
+static const char *nombreTipoUsuario(UserType tipo)
+{
+    switch (tipo)
+    {
+    case USER_ADMINISTRATIVO:
+        return "Personal administrativo";
+
+    case USER_TECNICO:
+        return "Personal tecnico";
+
+    case USER_PROFESOR:
+        return "Profesor";
+
+    case USER_ESTUDIANTE:
+        return "Estudiante";
+
+    default:
+        return "No detectado";
+    }
+}
+
 static void *detectarOracion(void *arg)
 {
     DetectionTask *task = (DetectionTask *)arg;
@@ -106,6 +145,12 @@ void procesarColaPendiente(SessionContext *session,
             break;
         }
 
+        pthread_mutex_lock(&session->printMutex);
+        printf("[Loader] Procesando lote de %d oracion(es) con P=%d.\n",
+               extraidas,
+               p);
+        pthread_mutex_unlock(&session->printMutex);
+
         for (int i = 0; i < extraidas; i++)
         {
             tasks[i].session = session;
@@ -132,18 +177,31 @@ void procesarColaPendiente(SessionContext *session,
 
         for (int i = 0; i < extraidas; i++)
         {
+            UserType tipoActual;
+            DocumentClass clase;
+
             if (hiloCreado[i])
             {
                 pthread_join(hilos[i], NULL);
                 hiloCreado[i] = false;
             }
 
+            clase = tasks[i].resultado.clase;
+
             pthread_mutex_lock(&session->perfilMutex);
             registrarDocumento(&session->perfil,
-                               tasks[i].resultado.clase);
+                               clase);
             session->tipoUsuarioActual =
                 determinarTipoUsuario(&session->perfil);
+            tipoActual = session->tipoUsuarioActual;
             pthread_mutex_unlock(&session->perfilMutex);
+
+            pthread_mutex_lock(&session->printMutex);
+            printf("[Detector] Oracion clasificada como: %s.\n",
+                   nombreClaseDocumento(clase));
+            printf("[Perfil] Tipo de usuario actual: %s.\n",
+                   nombreTipoUsuario(tipoActual));
+            pthread_mutex_unlock(&session->printMutex);
 
             free(tasks[i].oracion);
             tasks[i].oracion = NULL;
@@ -179,6 +237,10 @@ void *ejecutarLoader(void *arg)
         p = 1;
     }
 
+    pthread_mutex_lock(&session->printMutex);
+    printf("[Loader] Activo. Esperando lotes de %d oracion(es).\n", p);
+    pthread_mutex_unlock(&session->printMutex);
+
     while (sessionEstaActiva(session))
     {
         pthread_mutex_lock(&session->sentenceQueue.mutex);
@@ -197,8 +259,16 @@ void *ejecutarLoader(void *arg)
             break;
         }
 
+        pthread_mutex_lock(&session->printMutex);
+        printf("[Loader] Lote completo. Activando detectores.\n");
+        pthread_mutex_unlock(&session->printMutex);
+
         procesarColaPendiente(session, false);
     }
+
+    pthread_mutex_lock(&session->printMutex);
+    printf("[Loader] Finalizado.\n");
+    pthread_mutex_unlock(&session->printMutex);
 
     return NULL;
 }
@@ -229,8 +299,6 @@ void *atenderCliente(void *arg)
                 liberarCliente(info);
                 return NULL;
             }
-
-            printf("Recibido: %c\n", letra);
 
             if (letra == '\n')
             {
@@ -322,6 +390,8 @@ int agregarCaracter(ClientInfo *info, char letra)
 
 void procesarDocumento(ClientInfo *info)
 {
+    int pendientes;
+
     if (info == NULL)
     {
         return;
@@ -355,6 +425,14 @@ void procesarDocumento(ClientInfo *info)
         perror("encolarOracion");
         return;
     }
+
+    pendientes = cantidadOraciones(&info->session->sentenceQueue);
+
+    pthread_mutex_lock(&info->session->printMutex);
+    printf("[Ventana] Oracion encolada. Pendientes: %d/%d.\n",
+           pendientes,
+           info->session->detectionThreads);
+    pthread_mutex_unlock(&info->session->printMutex);
 
     info->longitud = 0;
 }
