@@ -165,21 +165,21 @@ Si `IA Learner` se cierra bruscamente, el launcher detecta que se perdio la comu
 
 ## Checklist Del Proyecto
 
-- [x] El programa compila sin errores con `make`.
-- [x] El programa esta separado por modulos claros.
-- [x] El manejo de datos usa TDAs apropiadas: tabla hash para diccionarios, cola para oraciones y gestores para procesos/hilos.
-- [x] El launcher monitorea procesos locales.
-- [x] Se usan procesos para ejecutar ventanas independientes.
-- [x] Se usan sockets TCP como mecanismo de IPC.
-- [x] Se usan hilos para concurrencia en el data center.
-- [x] El Loader espera hasta reunir `P` oraciones.
-- [x] Los detectores procesan `P` oraciones en paralelo.
-- [x] `P` se recibe como parametro de entrada.
-- [x] Se limita `P` segun CPUs disponibles.
-- [x] Se usan mutex y condition variables para reducir condiciones de carrera.
-- [x] Se liberan recursos principales al terminar la sesion.
-- [x] El perfil se calcula segun la Tabla 2.
-- [ ] Probar manualmente una ejecucion completa con varias ventanas.
+- [X] El programa compila sin errores con `make`.
+- [X] El programa esta separado por modulos claros.
+- [X] El manejo de datos usa TDAs apropiadas: tabla hash para diccionarios, cola para oraciones y gestores para procesos/hilos.
+- [X] El launcher monitorea procesos locales.
+- [X] Se usan procesos para ejecutar ventanas independientes.
+- [X] Se usan sockets TCP como mecanismo de IPC.
+- [X] Se usan hilos para concurrencia en el data center.
+- [X] El Loader espera hasta reunir `P` oraciones.
+- [X] Los detectores procesan `P` oraciones en paralelo.
+- [X] `P` se recibe como parametro de entrada.
+- [X] Se limita `P` segun CPUs disponibles.
+- [X] Se usan mutex y condition variables para reducir condiciones de carrera.
+- [X] Se liberan recursos principales al terminar la sesion.
+- [X] El perfil se calcula segun la Tabla 2.
+- [X] Probar manualmente una ejecucion completa con varias ventanas.
 - [ ] Actualizar el PDF con el nuevo Loader, cola y detectores.
 
 ## Archivos Generados
