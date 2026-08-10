@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "user_profile.h"
 #include "config.h"
@@ -43,6 +44,19 @@ void registrarDocumento(UserProfile *perfil, DocumentClass clase)
 
 UserType determinarTipoUsuario(const UserProfile *perfil)
 {
+    /*
+     * Tabla 2:
+     * - Administrativo: correo.
+     * - Tecnico: correo y reporte.
+     * - Profesor: correo y articulo.
+     * - Estudiante: articulo y reporte.
+     * Si aparecen las tres clases a la vez, no se puede determinar
+     * el tipo de usuario.
+     */
+    bool tieneCorreo;
+    bool tieneArticulo;
+    bool tieneReporte;
+
     if (perfil == NULL)
     {
         return USER_NO_DETECTADO;
@@ -57,47 +71,31 @@ UserType determinarTipoUsuario(const UserProfile *perfil)
         return USER_NO_DETECTADO;
     }
 
-    double pCorreo =
-        (double)perfil->correos / total;
+    tieneCorreo = perfil->correos > 0;
+    tieneArticulo = perfil->articulos > 0;
+    tieneReporte = perfil->reportes > 0;
 
-    double pArticulo =
-        (double)perfil->articulos / total;
+    if (tieneCorreo && tieneArticulo && tieneReporte)
+    {
+        return USER_NO_DETECTADO;
+    }
 
-    double pReporte =
-        (double)perfil->reportes / total;
-
-    /*personal administrativo*/
-
-    if (pCorreo >= UMBRAL_DOMINANTE &&
-        pArticulo < UMBRAL_MINIMO &&
-        pReporte < UMBRAL_MINIMO)
+    if (tieneCorreo && !tieneArticulo && !tieneReporte)
     {
         return USER_ADMINISTRATIVO;
     }
 
-    /*personal tecnico*/
-
-    if (pCorreo >= UMBRAL_COMPLEMENTARIO &&
-        pReporte >= UMBRAL_COMPLEMENTARIO &&
-        pArticulo < UMBRAL_MINIMO)
+    if (tieneCorreo && !tieneArticulo && tieneReporte)
     {
         return USER_TECNICO;
     }
 
-    /*profesor*/
-
-    if (pCorreo >= UMBRAL_COMPLEMENTARIO &&
-        pArticulo >= UMBRAL_COMPLEMENTARIO &&
-        pReporte < UMBRAL_MINIMO)
+    if (tieneCorreo && tieneArticulo && !tieneReporte)
     {
         return USER_PROFESOR;
     }
 
-    /*estudiante*/
-
-    if (pArticulo >= UMBRAL_COMPLEMENTARIO &&
-        pReporte >= UMBRAL_COMPLEMENTARIO &&
-        pCorreo < UMBRAL_MINIMO)
+    if (!tieneCorreo && tieneArticulo && tieneReporte)
     {
         return USER_ESTUDIANTE;
     }
@@ -133,9 +131,9 @@ UserType clasificarUsuario(const UserProfile *perfil)
         (double)perfil->reportes / total;
 
     printf("=========== ESTADISTICAS ===========\n\n");
-    printf("%-11s %-2d (%.2f%%)\n", "Correos:", perfil->correos, pCorreo);
-    printf("%-11s %-2d (%.2f%%)\n", "Articulos:", perfil->articulos, pArticulo);
-    printf("%-11s %-2d (%.2f%%)\n", "Reportes:", perfil->reportes, pReporte);
+    printf("%-11s %-2d (%.2f%%)\n", "Correos:", perfil->correos, pCorreo * 100.0);
+    printf("%-11s %-2d (%.2f%%)\n", "Articulos:", perfil->articulos, pArticulo * 100.0);
+    printf("%-11s %-2d (%.2f%%)\n", "Reportes:", perfil->reportes, pReporte * 100.0);
 
     tipo = determinarTipoUsuario(perfil);
 
