@@ -36,6 +36,12 @@ void *atenderCliente(void *arg)
             }
 
             printf("Recibido: %c\n", letra);
+
+            if (letra == '\n')
+            {
+                procesarDocumento(info);
+            }
+
             continue;
         }
 
@@ -56,7 +62,10 @@ void *atenderCliente(void *arg)
         return NULL;
     }
 
-    procesarDocumento(info);
+    if (info->longitud > 0)
+    {
+        procesarDocumento(info);
+    }
 
     liberarCliente(info);
 
@@ -123,6 +132,11 @@ void procesarDocumento(ClientInfo *info)
         return;
     }
 
+    if (info->longitud == 0)
+    {
+        return;
+    }
+
     if (info->longitud == info->capacidad)
     { // Para asegurar espacio para el carácter nulo \0... 1 byte extra
         char *temp = realloc(info->documento,
@@ -158,4 +172,6 @@ void procesarDocumento(ClientInfo *info)
     pthread_mutex_lock(&info->session->perfilMutex);
     registrarDocumento(&info->session->perfil, resultado.clase);
     pthread_mutex_unlock(&info->session->perfilMutex);
+
+    info->longitud = 0;
 }
