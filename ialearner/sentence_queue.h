@@ -11,7 +11,9 @@ typedef struct
     int cantidad;
     int frente;
     bool mutexInicializado;
+    bool condInicializada;
     pthread_mutex_t mutex;
+    pthread_cond_t cond;
 } SentenceQueue;
 
 int inicializarSentenceQueue(SentenceQueue *queue);
@@ -25,5 +27,7 @@ int cantidadOraciones(const SentenceQueue *queue);
 int extraerOraciones(SentenceQueue *queue,
                      char **destino,
                      int maximo);
+
+void despertarSentenceQueue(SentenceQueue *queue);
 
 #endif

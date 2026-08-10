@@ -18,6 +18,7 @@ typedef struct
     pthread_mutex_t perfilMutex;
     pthread_mutex_t printMutex;
     pthread_mutex_t sessionMutex;
+    pthread_mutex_t processingMutex;
     ThreadManager threadManager;
     SentenceQueue sentenceQueue;
     int detectionThreads;

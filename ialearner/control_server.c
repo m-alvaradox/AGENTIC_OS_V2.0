@@ -58,6 +58,8 @@ static void cerrarServidoresVentana(SessionContext *session)
     session->window_count = 0;
 
     pthread_mutex_unlock(&session->sessionMutex);
+
+    despertarSentenceQueue(&session->sentenceQueue);
 }
 
 static void enviarRespuestaVentana(SessionContext *session,
@@ -238,6 +240,27 @@ static void *atenderLauncher(void *arg)
     free(args);
 
     printf("Launcher conectado.\n");
+
+    pthread_t loaderThread;
+
+    if (pthread_create(&loaderThread,
+                       NULL,
+                       ejecutarLoader,
+                       &session) != 0)
+    {
+        perror("pthread_create loader");
+        liberarSessionContext(&session);
+        return NULL;
+    }
+
+    if (agregarThread(&session.threadManager,
+                      loaderThread) == -1)
+    {
+        establecerSessionActiva(&session, false);
+        pthread_join(loaderThread, NULL);
+        liberarSessionContext(&session);
+        return NULL;
+    }
 
     ControlMessage mensaje;
     int seguir = 1;

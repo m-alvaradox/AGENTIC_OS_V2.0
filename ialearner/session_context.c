@@ -65,6 +65,17 @@ int inicializarSessionContext(SessionContext *session,
         return -1;
     }
 
+    if (pthread_mutex_init(&session->processingMutex, NULL) != 0)
+    {
+        perror("pthread_mutex_init");
+        pthread_mutex_destroy(&session->sessionMutex);
+        pthread_mutex_destroy(&session->printMutex);
+        pthread_mutex_destroy(&session->perfilMutex);
+        liberarSentenceQueue(&session->sentenceQueue);
+        liberarThreadManager(&session->threadManager);
+        return -1;
+    }
+
     return 0;
 }
 
@@ -99,6 +110,7 @@ void liberarSessionContext(SessionContext *session)
     }
 
     pthread_mutex_destroy(&session->sessionMutex);
+    pthread_mutex_destroy(&session->processingMutex);
     pthread_mutex_destroy(&session->printMutex);
     pthread_mutex_destroy(&session->perfilMutex);
 }
@@ -130,4 +142,9 @@ void establecerSessionActiva(SessionContext *session,
     pthread_mutex_lock(&session->sessionMutex);
     session->sessionActiva = activa;
     pthread_mutex_unlock(&session->sessionMutex);
+
+    if (!activa)
+    {
+        despertarSentenceQueue(&session->sentenceQueue);
+    }
 }

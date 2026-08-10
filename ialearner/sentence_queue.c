@@ -67,6 +67,7 @@ int inicializarSentenceQueue(SentenceQueue *queue)
     queue->cantidad = 0;
     queue->frente = 0;
     queue->mutexInicializado = false;
+    queue->condInicializada = false;
     queue->oraciones = malloc(sizeof(char *) * queue->capacidad);
 
     if (queue->oraciones == NULL)
@@ -85,6 +86,19 @@ int inicializarSentenceQueue(SentenceQueue *queue)
     }
 
     queue->mutexInicializado = true;
+
+    if (pthread_cond_init(&queue->cond, NULL) != 0)
+    {
+        perror("pthread_cond_init");
+        pthread_mutex_destroy(&queue->mutex);
+        free(queue->oraciones);
+        queue->oraciones = NULL;
+        queue->capacidad = 0;
+        queue->mutexInicializado = false;
+        return -1;
+    }
+
+    queue->condInicializada = true;
     return 0;
 }
 
@@ -112,9 +126,24 @@ void liberarSentenceQueue(SentenceQueue *queue)
     queue->cantidad = 0;
     queue->frente = 0;
 
+    if (queue->condInicializada)
+    {
+        pthread_cond_broadcast(&queue->cond);
+    }
+
     if (queue->mutexInicializado)
     {
         pthread_mutex_unlock(&queue->mutex);
+    }
+
+    if (queue->condInicializada)
+    {
+        pthread_cond_destroy(&queue->cond);
+        queue->condInicializada = false;
+    }
+
+    if (queue->mutexInicializado)
+    {
         pthread_mutex_destroy(&queue->mutex);
         queue->mutexInicializado = false;
     }
@@ -156,6 +185,11 @@ int encolarOracion(SentenceQueue *queue, const char *oracion)
 
     queue->oraciones[indice] = copia;
     queue->cantidad++;
+
+    if (queue->condInicializada)
+    {
+        pthread_cond_signal(&queue->cond);
+    }
 
     if (queue->mutexInicializado)
     {
@@ -220,4 +254,27 @@ int extraerOraciones(SentenceQueue *queue,
     }
 
     return extraidas;
+}
+
+void despertarSentenceQueue(SentenceQueue *queue)
+{
+    if (queue == NULL)
+    {
+        return;
+    }
+
+    if (queue->mutexInicializado)
+    {
+        pthread_mutex_lock(&queue->mutex);
+    }
+
+    if (queue->condInicializada)
+    {
+        pthread_cond_broadcast(&queue->cond);
+    }
+
+    if (queue->mutexInicializado)
+    {
+        pthread_mutex_unlock(&queue->mutex);
+    }
 }

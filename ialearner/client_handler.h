@@ -24,4 +24,6 @@ void procesarDocumento(ClientInfo *info);
 void procesarColaPendiente(SessionContext *session,
                             bool forzar);
 
+void *ejecutarLoader(void *arg);
+
 #endif

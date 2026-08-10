@@ -60,6 +60,8 @@ void procesarColaPendiente(SessionContext *session,
         return;
     }
 
+    pthread_mutex_lock(&session->processingMutex);
+
     p = session->detectionThreads;
     if (p <= 0)
     {
@@ -69,6 +71,7 @@ void procesarColaPendiente(SessionContext *session,
     if (!forzar &&
         cantidadOraciones(&session->sentenceQueue) < p)
     {
+        pthread_mutex_unlock(&session->processingMutex);
         return;
     }
 
@@ -87,6 +90,7 @@ void procesarColaPendiente(SessionContext *session,
         free(tasks);
         free(hilos);
         free(hiloCreado);
+        pthread_mutex_unlock(&session->processingMutex);
         return;
     }
 
@@ -154,6 +158,47 @@ void procesarColaPendiente(SessionContext *session,
     free(hilos);
     free(tasks);
     free(oraciones);
+    pthread_mutex_unlock(&session->processingMutex);
+}
+
+void *ejecutarLoader(void *arg)
+{
+    SessionContext *session = (SessionContext *)arg;
+    int p;
+
+    if (session == NULL)
+    {
+        return NULL;
+    }
+
+    p = session->detectionThreads;
+    if (p <= 0)
+    {
+        p = 1;
+    }
+
+    while (sessionEstaActiva(session))
+    {
+        pthread_mutex_lock(&session->sentenceQueue.mutex);
+
+        while (session->sentenceQueue.cantidad < p &&
+               sessionEstaActiva(session))
+        {
+            pthread_cond_wait(&session->sentenceQueue.cond,
+                              &session->sentenceQueue.mutex);
+        }
+
+        pthread_mutex_unlock(&session->sentenceQueue.mutex);
+
+        if (!sessionEstaActiva(session))
+        {
+            break;
+        }
+
+        procesarColaPendiente(session, false);
+    }
+
+    return NULL;
 }
 
 void *atenderCliente(void *arg)
@@ -310,5 +355,4 @@ void procesarDocumento(ClientInfo *info)
     }
 
     info->longitud = 0;
-    procesarColaPendiente(info->session, false);
 }
