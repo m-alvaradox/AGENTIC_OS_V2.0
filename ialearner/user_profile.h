@@ -17,6 +17,8 @@ void registrarDocumento(UserProfile *perfil,
 
 UserType clasificarUsuario(const UserProfile *perfil);
 
+UserType determinarTipoUsuario(const UserProfile *perfil);
+
 void imprimirPerfilUsuario(UserType tipo);
 
 #endif

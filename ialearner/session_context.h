@@ -15,6 +15,7 @@ typedef struct
     ServerContext *server;
 
     UserProfile perfil;
+    UserType tipoUsuarioActual;
     pthread_mutex_t perfilMutex;
     pthread_mutex_t printMutex;
     pthread_mutex_t sessionMutex;

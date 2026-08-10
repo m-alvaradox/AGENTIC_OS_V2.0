@@ -141,6 +141,8 @@ void procesarColaPendiente(SessionContext *session,
             pthread_mutex_lock(&session->perfilMutex);
             registrarDocumento(&session->perfil,
                                tasks[i].resultado.clase);
+            session->tipoUsuarioActual =
+                determinarTipoUsuario(&session->perfil);
             pthread_mutex_unlock(&session->perfilMutex);
 
             free(tasks[i].oracion);

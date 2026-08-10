@@ -90,9 +90,20 @@ static void enviarPerfilUsuario(SessionContext *session)
     UserContext contextoUsuario;
 
     pthread_mutex_lock(&session->perfilMutex);
-    contextoUsuario.tipo =
+    contextoUsuario.tipo = session->tipoUsuarioActual;
+
+    if (contextoUsuario.tipo == USER_NO_DETECTADO)
+    {
+        contextoUsuario.tipo =
+            clasificarUsuario(&session->perfil);
+    }
+    else
+    {
         clasificarUsuario(&session->perfil);
+    }
+
     inicializarPerfil(&session->perfil);
+    session->tipoUsuarioActual = USER_NO_DETECTADO;
     pthread_mutex_unlock(&session->perfilMutex);
 
     if (send(session->launcherSocket,

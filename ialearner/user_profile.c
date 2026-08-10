@@ -41,28 +41,8 @@ void registrarDocumento(UserProfile *perfil, DocumentClass clase)
     }
 }
 
-UserType clasificarUsuario(const UserProfile *perfil)
+UserType determinarTipoUsuario(const UserProfile *perfil)
 {
-    /* Se clasifica al usuario segun la distribucion
-    porcentual de su actividad total frente a umbrales
-    predefinidos (config.h)
-
-    personal admin, predominancia alta
-    de correos y minima actividad en el resto
-
-    Para el tecnico, es compartida entre correos y reportes,
-    pocos articulos
-
-    profesor: compartido entre correos y articulos, con pocos
-    reportes
-
-    estudiante: compartido articulos y reportes, pocos
-    correos
-
-    no detectado: es un perfil nulo que no encaja con los patrones
-    anteriores
-    */
-
     if (perfil == NULL)
     {
         return USER_NO_DETECTADO;
@@ -85,11 +65,6 @@ UserType clasificarUsuario(const UserProfile *perfil)
 
     double pReporte =
         (double)perfil->reportes / total;
-
-    printf("=========== ESTADISTICAS ===========\n\n");
-    printf("%-11s %-2d (%.2f%%)\n", "Correos:", perfil->correos, pCorreo);
-    printf("%-11s %-2d (%.2f%%)\n", "Articulos:", perfil->articulos, pArticulo);
-    printf("%-11s %-2d (%.2f%%)\n", "Reportes:", perfil->reportes, pReporte);
 
     /*personal administrativo*/
 
@@ -128,6 +103,43 @@ UserType clasificarUsuario(const UserProfile *perfil)
     }
 
     return USER_NO_DETECTADO;
+}
+
+UserType clasificarUsuario(const UserProfile *perfil)
+{
+    UserType tipo;
+
+    if (perfil == NULL)
+    {
+        return USER_NO_DETECTADO;
+    }
+
+    int total = perfil->correos +
+                perfil->articulos +
+                perfil->reportes;
+
+    if (total == 0)
+    {
+        return USER_NO_DETECTADO;
+    }
+
+    double pCorreo =
+        (double)perfil->correos / total;
+
+    double pArticulo =
+        (double)perfil->articulos / total;
+
+    double pReporte =
+        (double)perfil->reportes / total;
+
+    printf("=========== ESTADISTICAS ===========\n\n");
+    printf("%-11s %-2d (%.2f%%)\n", "Correos:", perfil->correos, pCorreo);
+    printf("%-11s %-2d (%.2f%%)\n", "Articulos:", perfil->articulos, pArticulo);
+    printf("%-11s %-2d (%.2f%%)\n", "Reportes:", perfil->reportes, pReporte);
+
+    tipo = determinarTipoUsuario(perfil);
+
+    return tipo;
 }
 
 void imprimirPerfilUsuario(UserType tipo)

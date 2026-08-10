@@ -18,6 +18,7 @@ int inicializarSessionContext(SessionContext *session,
     session->sessionActiva = true;
 
     inicializarPerfil(&session->perfil);
+    session->tipoUsuarioActual = USER_NO_DETECTADO;
     inicializarThreadManager(&session->threadManager);
     session->detectionThreads = server->detectionThreads;
 
