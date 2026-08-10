@@ -41,6 +41,7 @@
 
 /*Deteccion concurrente*/
 #define DEFAULT_DETECTION_THREADS       2
+#define MAX_DETECTION_THREADS           64
 #define INITIAL_SENTENCE_QUEUE_CAPACITY 16
 
 /*Launcher*/

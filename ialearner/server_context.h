@@ -15,6 +15,7 @@ typedef struct {
     ThreadManager threadManager;
 
     int server_fd;
+    int detectionThreads;
     int siguientePuertoVentana;
     pthread_mutex_t puertoMutex;
     

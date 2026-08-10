@@ -10,10 +10,47 @@
 #include "config.h"
 #include "control_server.h"
 
-int main(void)
+static int obtenerDetectionThreads(int argc, char **argv)
+{
+    char *fin;
+    long valor;
+
+    if (argc < 2)
+    {
+        return DEFAULT_DETECTION_THREADS;
+    }
+
+    valor = strtol(argv[1], &fin, 10);
+
+    if (*argv[1] == '\0' || *fin != '\0' || valor <= 0)
+    {
+        fprintf(stderr,
+                "Parametro P invalido. Uso: ./ialearner [P]\n");
+        return -1;
+    }
+
+    if (valor > MAX_DETECTION_THREADS)
+    {
+        fprintf(stderr,
+                "P excede el maximo permitido (%d).\n",
+                MAX_DETECTION_THREADS);
+        return -1;
+    }
+
+    return (int)valor;
+}
+
+int main(int argc, char **argv)
 {
     pthread_t controlThread;
     ServerContext contexto;
+    int detectionThreads;
+
+    detectionThreads = obtenerDetectionThreads(argc, argv);
+    if (detectionThreads == -1)
+    {
+        return EXIT_FAILURE;
+    }
 
     memset(&contexto, 0, sizeof(contexto));
 
@@ -48,6 +85,7 @@ int main(void)
     inicializarThreadManager(&contexto.threadManager);
 
     contexto.server_fd = -1;
+    contexto.detectionThreads = detectionThreads;
     contexto.siguientePuertoVentana = WINDOW_BASE_PORT;
 
     if (pthread_create(&controlThread,
@@ -68,6 +106,8 @@ int main(void)
 
     printf("=== IA Learner Data Center ===\n");
     printf("Servidor del Data Center iniciado...\n");
+    printf("Hilos de deteccion por lote (P): %d\n",
+           contexto.detectionThreads);
     printf("Esperando conexiones...\n\n");
 
     pthread_join(controlThread, NULL);

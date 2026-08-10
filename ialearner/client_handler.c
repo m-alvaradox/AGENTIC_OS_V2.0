@@ -8,32 +8,41 @@
 #include "classifier.h"
 #include "config.h"
 
-static void clasificarOracion(SessionContext *session,
-                              const char *oracion)
+typedef struct
 {
+    SessionContext *session;
+    char *oracion;
+    ClassificationResult resultado;
+} DetectionTask;
+
+static void *detectarOracion(void *arg)
+{
+    DetectionTask *task = (DetectionTask *)arg;
     ClassificationResult resultado;
 
-    if (session == NULL || oracion == NULL)
+    if (task == NULL ||
+        task->session == NULL ||
+        task->oracion == NULL)
     {
-        return;
+        return NULL;
     }
 
-    resultado = clasificarDocumento(oracion,
-                                    session->server->correo,
-                                    session->server->articulo,
-                                    session->server->reporte);
+    resultado = clasificarDocumento(task->oracion,
+                                    task->session->server->correo,
+                                    task->session->server->articulo,
+                                    task->session->server->reporte);
+
+    task->resultado = resultado;
 
 #if SHOW_DOCUMENT_DEBUG
-    pthread_mutex_lock(&session->printMutex);
+    pthread_mutex_lock(&task->session->printMutex);
     printf("\n========== ORACION RECIBIDA ==========\n");
-    printf("%s\n", oracion);
+    printf("%s\n", task->oracion);
     imprimirClasificacion(&resultado);
-    pthread_mutex_unlock(&session->printMutex);
+    pthread_mutex_unlock(&task->session->printMutex);
 #endif
 
-    pthread_mutex_lock(&session->perfilMutex);
-    registrarDocumento(&session->perfil, resultado.clase);
-    pthread_mutex_unlock(&session->perfilMutex);
+    return NULL;
 }
 
 void procesarColaPendiente(SessionContext *session,
@@ -41,6 +50,9 @@ void procesarColaPendiente(SessionContext *session,
 {
     int p;
     char **oraciones;
+    DetectionTask *tasks;
+    pthread_t *hilos;
+    bool *hiloCreado;
     int extraidas;
 
     if (session == NULL)
@@ -61,9 +73,20 @@ void procesarColaPendiente(SessionContext *session,
     }
 
     oraciones = calloc((size_t)p, sizeof(char *));
-    if (oraciones == NULL)
+    tasks = calloc((size_t)p, sizeof(DetectionTask));
+    hilos = calloc((size_t)p, sizeof(pthread_t));
+    hiloCreado = calloc((size_t)p, sizeof(bool));
+
+    if (oraciones == NULL ||
+        tasks == NULL ||
+        hilos == NULL ||
+        hiloCreado == NULL)
     {
         perror("calloc");
+        free(oraciones);
+        free(tasks);
+        free(hilos);
+        free(hiloCreado);
         return;
     }
 
@@ -81,8 +104,43 @@ void procesarColaPendiente(SessionContext *session,
 
         for (int i = 0; i < extraidas; i++)
         {
-            clasificarOracion(session, oraciones[i]);
-            free(oraciones[i]);
+            tasks[i].session = session;
+            tasks[i].oracion = oraciones[i];
+            tasks[i].resultado.clase = DOC_SIN_CLASIFICAR;
+            tasks[i].resultado.coincidenciasCorreo = 0;
+            tasks[i].resultado.coincidenciasArticulo = 0;
+            tasks[i].resultado.coincidenciasReporte = 0;
+
+            if (pthread_create(&hilos[i],
+                               NULL,
+                               detectarOracion,
+                               &tasks[i]) == 0)
+            {
+                hiloCreado[i] = true;
+            }
+            else
+            {
+                perror("pthread_create");
+                detectarOracion(&tasks[i]);
+                hiloCreado[i] = false;
+            }
+        }
+
+        for (int i = 0; i < extraidas; i++)
+        {
+            if (hiloCreado[i])
+            {
+                pthread_join(hilos[i], NULL);
+                hiloCreado[i] = false;
+            }
+
+            pthread_mutex_lock(&session->perfilMutex);
+            registrarDocumento(&session->perfil,
+                               tasks[i].resultado.clase);
+            pthread_mutex_unlock(&session->perfilMutex);
+
+            free(tasks[i].oracion);
+            tasks[i].oracion = NULL;
             oraciones[i] = NULL;
         }
 
@@ -92,6 +150,9 @@ void procesarColaPendiente(SessionContext *session,
         }
     }
 
+    free(hiloCreado);
+    free(hilos);
+    free(tasks);
     free(oraciones);
 }
 

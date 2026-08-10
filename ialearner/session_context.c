@@ -19,7 +19,12 @@ int inicializarSessionContext(SessionContext *session,
 
     inicializarPerfil(&session->perfil);
     inicializarThreadManager(&session->threadManager);
-    session->detectionThreads = DEFAULT_DETECTION_THREADS;
+    session->detectionThreads = server->detectionThreads;
+
+    if (session->detectionThreads <= 0)
+    {
+        session->detectionThreads = DEFAULT_DETECTION_THREADS;
+    }
 
     if (inicializarSentenceQueue(&session->sentenceQueue) == -1)
     {
