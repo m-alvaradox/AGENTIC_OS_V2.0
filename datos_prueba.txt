@@ -1,0 +1,71 @@
+En la TERMINAL 1 ejecutar:
+
+    cd ialearner
+    ./ialearner 2
+
+Debe mostrarse una salida similar a:
+
+    [CONFIG] Detectores (P)       : 2
+    [RED]    Canal de control     : puerto 5001
+    [ESTADO] Servidor listo; esperando un launcher.
+
+------------------------------------------------------------
+INICIAR EL LAUNCHER
+------------------------------------------------------------
+
+En la TERMINAL 2 ejecutar:
+
+    cd launcher
+    ./launcher
+
+En el menu del launcher seleccionar dos veces:
+
+    1. Crear Window
+
+El launcher debe crear dos procesos graficos independientes.
+
+------------------------------------------------------------
+PRUEBA PRINCIPAL: DETECTAR PROFESOR
+------------------------------------------------------------
+
+En la PRIMERA ventana escribir y presionar Enter:
+
+    Thank Please Regards Meeting
+
+Como P=2, IALearner debe dejar esta oracion esperando:
+
+    [COLA] Oracion recibida | pendientes=1 | necesarias=2
+
+En la SEGUNDA ventana escribir y presionar Enter:
+
+    Analysis Results Method Study
+
+Al llegar la segunda oracion, IALearner debe activar el lote:
+
+    [COLA] Oracion recibida | pendientes=2 | necesarias=2
+    [LOADER] Lote 01 iniciado: despertando 2 detector(es).
+
+Resultados esperados (el orden puede variar por la concurrencia):
+
+    Clase: Correo electronico
+    coincidencias C:4 A:0 R:0
+
+    Clase: Articulo cientifico
+    coincidencias C:0 A:4 R:0
+
+    usuario: Profesor
+
+En el launcher seleccionar:
+
+    3. Mostrar procesos
+
+Se deben mostrar los PID y el estado de las dos ventanas locales.
+
+Luego seleccionar:
+
+    4. Salir
+
+Resultado final esperado en el launcher:
+
+    PERFIL DEL USUARIO
+    Profesor

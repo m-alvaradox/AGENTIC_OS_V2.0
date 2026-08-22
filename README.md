@@ -165,27 +165,6 @@ Estos mensajes ayudan a demostrar que el sistema no espera al cierre de la venta
 
 Si `IA Learner` se cierra bruscamente, el launcher detecta que se perdio la comunicacion, cierra sus ventanas locales y finaliza. Esto evita dejar ventanas huerfanas sin conexion al servicio central.
 
-## Checklist Del Proyecto
-
-- [X] El programa compila sin errores con `make`.
-- [X] El programa esta separado por modulos claros.
-- [X] El manejo de datos usa TDAs apropiadas: tabla hash para diccionarios, cola para oraciones y gestores para procesos/hilos.
-- [X] El launcher monitorea procesos locales.
-- [X] Se usan procesos para ejecutar ventanas independientes.
-- [X] Se usan sockets TCP como mecanismo de IPC.
-- [X] Se usan hilos para concurrencia en el data center.
-- [X] El Loader espera hasta reunir `P` oraciones.
-- [X] Los detectores procesan `P` oraciones en paralelo.
-- [X] Los `P` detectores forman un pool permanente y esperan suspendidos entre lotes.
-- [X] Cada detector actualiza asincronicamente el tipo de usuario al terminar.
-- [X] `P` se recibe como parametro de entrada.
-- [X] Se limita `P` segun CPUs disponibles.
-- [X] Se usan mutex y condition variables para reducir condiciones de carrera.
-- [X] Se liberan recursos principales al terminar la sesion.
-- [X] El perfil se calcula segun la Tabla 2.
-- [X] Probar manualmente una ejecucion completa con varias ventanas.
-- [X] Actualizar el PDF con el nuevo Loader, cola, pool de detectores y decision asincronica.
-
 ## Archivos Generados
 
 Durante la compilacion se pueden generar archivos como:
