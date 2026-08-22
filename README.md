@@ -76,14 +76,16 @@ El launcher muestra un menu:
 
 ## Uso Basico
 
+Para una demostracion completa con textos de prueba y resultados esperados, consulte [`DEMO.md`](DEMO.md).
+
 1. Ejecutar `ialearner`, opcionalmente con `P`.
 2. Ejecutar `launcher`.
 3. Elegir `1. Crear Window`.
 4. Escribir texto en la ventana creada.
 5. Presionar Enter para cerrar una oracion.
 6. `IA Learner` encola la oracion.
-7. Cuando hay `P` oraciones listas, el Loader activa los hilos de deteccion.
-8. Cada hilo clasifica una oracion en paralelo.
+7. Cuando hay `P` oraciones listas, el Loader despierta hasta `P` detectores del pool.
+8. Cada detector clasifica una oracion en paralelo y vuelve a quedar suspendido.
 9. Elegir `4. Salir` en el launcher para cerrar la sesion y ver el perfil final.
 
 Si una ventana se cierra con texto pendiente, el servidor procesa ese ultimo fragmento antes de liberar el cliente.
@@ -112,15 +114,15 @@ Aunque puede ejecutarse localmente con `127.0.0.1`, la estructura representa un 
 El proyecto usa:
 
 - procesos con `fork` y `execl` para crear ventanas;
-- hilos `pthread` para atender launchers, ventanas, Loader y detectores;
+- hilos `pthread` para atender launchers, ventanas, Loader y un pool permanente de detectores;
 - mutex para proteger perfil, estado de sesion, puertos y procesamiento de lotes;
-- condition variables para dormir el Loader hasta que existan suficientes oraciones.
+- condition variables para dormir el Loader y los detectores mientras no tengan trabajo.
 
 Flujo concurrente:
 
 ```text
 window -> caracteres -> IA Learner -> oracion -> cola
-cola con P oraciones -> Loader -> P hilos detectores -> perfil
+cola con P oraciones -> Loader -> despierta P detectores -> perfil
 ```
 
 ## Clasificacion
@@ -145,17 +147,17 @@ Articulo + Reporte     -> Estudiante
 Correo + Articulo + Reporte -> No detectado
 ```
 
-La decision se actualiza de forma asincronica cada vez que termina un lote de deteccion. Al final de la sesion se envia el ultimo perfil detectado al launcher.
+Cada detector actualiza el perfil de forma asincronica apenas termina de clasificar su oracion, sin esperar a que finalice el lote completo. Al final de la sesion se envia el ultimo perfil detectado al launcher.
 
 ## Mensajes De Consola
 
 Durante la ejecucion, `IA Learner` imprime trazas utiles para verificar la concurrencia:
 
-- `[Ventana] Oracion encolada...`
-- `[Loader] Lote completo...`
-- `[Loader] Procesando lote...`
-- `[Detector] Oracion clasificada como...`
-- `[Perfil] Tipo de usuario actual...`
+- `[COLA] Oracion recibida | pendientes=...`
+- `[LOADER] Lote 01 iniciado...`
+- `[LOTE 01][1/2] Texto: ...`
+- `[LOTE 01][1/2] Clase: ... | coincidencias ... | usuario: ...`
+- `[RESUMEN] Documentos procesados`
 
 Estos mensajes ayudan a demostrar que el sistema no espera al cierre de la ventana, sino que procesa oraciones al presionar Enter.
 
@@ -174,13 +176,15 @@ Si `IA Learner` se cierra bruscamente, el launcher detecta que se perdio la comu
 - [X] Se usan hilos para concurrencia en el data center.
 - [X] El Loader espera hasta reunir `P` oraciones.
 - [X] Los detectores procesan `P` oraciones en paralelo.
+- [X] Los `P` detectores forman un pool permanente y esperan suspendidos entre lotes.
+- [X] Cada detector actualiza asincronicamente el tipo de usuario al terminar.
 - [X] `P` se recibe como parametro de entrada.
 - [X] Se limita `P` segun CPUs disponibles.
 - [X] Se usan mutex y condition variables para reducir condiciones de carrera.
 - [X] Se liberan recursos principales al terminar la sesion.
 - [X] El perfil se calcula segun la Tabla 2.
 - [X] Probar manualmente una ejecucion completa con varias ventanas.
-- [ ] Actualizar el PDF con el nuevo Loader, cola y detectores.
+- [X] Actualizar el PDF con el nuevo Loader, cola, pool de detectores y decision asincronica.
 
 ## Archivos Generados
 

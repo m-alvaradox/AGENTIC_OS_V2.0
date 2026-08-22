@@ -130,10 +130,10 @@ UserType clasificarUsuario(const UserProfile *perfil)
     double pReporte =
         (double)perfil->reportes / total;
 
-    printf("=========== ESTADISTICAS ===========\n\n");
-    printf("%-11s %-2d (%.2f%%)\n", "Correos:", perfil->correos, pCorreo * 100.0);
-    printf("%-11s %-2d (%.2f%%)\n", "Articulos:", perfil->articulos, pArticulo * 100.0);
-    printf("%-11s %-2d (%.2f%%)\n", "Reportes:", perfil->reportes, pReporte * 100.0);
+    printf("\n[RESUMEN] Documentos procesados\n");
+    printf("          Correo   : %d (%.2f%%)\n", perfil->correos, pCorreo * 100.0);
+    printf("          Articulo : %d (%.2f%%)\n", perfil->articulos, pArticulo * 100.0);
+    printf("          Reporte  : %d (%.2f%%)\n", perfil->reportes, pReporte * 100.0);
 
     tipo = determinarTipoUsuario(perfil);
 

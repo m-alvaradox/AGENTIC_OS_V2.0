@@ -24,6 +24,10 @@ void procesarDocumento(ClientInfo *info);
 void procesarColaPendiente(SessionContext *session,
                             bool forzar);
 
+int iniciarPoolDetectores(SessionContext *session);
+
+void detenerPoolDetectores(SessionContext *session);
+
 void *ejecutarLoader(void *arg);
 
 #endif

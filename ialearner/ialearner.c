@@ -76,8 +76,8 @@ int main(int argc, char **argv)
 
     if (detectionThreads > cpuCount)
     {
-        printf("P=%d excede los CPUs disponibles (%d). "
-               "Se usara P=%d.\n",
+        printf("[CONFIG] P solicitado=%d, CPUs disponibles=%d; "
+               "se ajusta P=%d.\n",
                detectionThreads,
                cpuCount,
                cpuCount);
@@ -137,12 +137,14 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    printf("=== IA Learner Data Center ===\n");
-    printf("Servidor del Data Center iniciado...\n");
-    printf("CPUs disponibles: %d\n", contexto.cpuCount);
-    printf("Hilos de deteccion por lote (P): %d\n",
-           contexto.detectionThreads);
-    printf("Esperando conexiones...\n\n");
+    printf("\n============================================================\n");
+    printf("                 IA LEARNER - DATA CENTER\n");
+    printf("============================================================\n");
+    printf("[CONFIG] CPUs disponibles     : %d\n", contexto.cpuCount);
+    printf("[CONFIG] Detectores (P)       : %d\n", contexto.detectionThreads);
+    printf("[RED]    Canal de control     : puerto %d\n", CONTROL_SERVICE_PORT);
+    printf("[ESTADO] Servidor listo; esperando un launcher.\n");
+    printf("============================================================\n");
 
     pthread_join(controlThread, NULL);
 

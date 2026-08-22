@@ -122,7 +122,7 @@ static void abrirVentana(SessionContext *session)
     if (session->window_count >= MAX_WINDOW_SERVERS)
     {
         pthread_mutex_unlock(&session->sessionMutex);
-        fprintf(stderr, "No hay espacio para mas ventanas.\n");
+        fprintf(stderr, "[CONTROL][ERROR] Limite de ventanas alcanzado.\n");
         enviarRespuestaVentana(session, 0, -1);
         return;
     }
@@ -131,7 +131,7 @@ static void abrirVentana(SessionContext *session)
 
     int puerto = asignarPuertoVentana(session->server);
 
-    printf("Abrir ventana en puerto %d.\n", puerto);
+    printf("[CONTROL] Nueva ventana | puerto=%d\n", puerto);
 
     int server_fd = iniciarServidor(puerto);
     if (server_fd == -1)
@@ -209,7 +209,7 @@ static void abrirVentana(SessionContext *session)
 
 static void cerrarVentana(SessionContext *session, int puerto)
 {
-    printf("Cerrar ventana en puerto %d.\n", puerto);
+    printf("[CONTROL] Cierre de ventana | puerto=%d\n", puerto);
 
     pthread_mutex_lock(&session->sessionMutex);
 
@@ -250,7 +250,14 @@ static void *atenderLauncher(void *arg)
 
     free(args);
 
-    printf("Launcher conectado.\n");
+    printf("\n[SESION] Launcher conectado. Preparando recursos...\n");
+
+    if (iniciarPoolDetectores(&session) == -1)
+    {
+        fprintf(stderr, "[SESION][ERROR] No fue posible iniciar el pool de detectores.\n");
+        liberarSessionContext(&session);
+        return NULL;
+    }
 
     pthread_t loaderThread;
 
@@ -260,6 +267,7 @@ static void *atenderLauncher(void *arg)
                        &session) != 0)
     {
         perror("pthread_create loader");
+        detenerPoolDetectores(&session);
         liberarSessionContext(&session);
         return NULL;
     }
@@ -269,6 +277,7 @@ static void *atenderLauncher(void *arg)
     {
         establecerSessionActiva(&session, false);
         pthread_join(loaderThread, NULL);
+        detenerPoolDetectores(&session);
         liberarSessionContext(&session);
         return NULL;
     }
@@ -289,7 +298,7 @@ static void *atenderLauncher(void *arg)
             switch (mensaje.comando)
             {
             case CMD_START:
-                printf("Sesion iniciada.\n");
+                printf("[SESION] Iniciada. Esperando ventanas y oraciones.\n");
                 break;
 
             case CMD_OPEN_WINDOW:
@@ -301,7 +310,7 @@ static void *atenderLauncher(void *arg)
                 break;
 
             case CMD_END:
-                printf("Sesion finalizada.\n");
+                printf("\n[SESION] Cierre solicitado. Procesando oraciones pendientes...\n");
 
                 cerrarServidoresVentana(&session);
                 procesarColaPendiente(&session, true);
@@ -312,7 +321,7 @@ static void *atenderLauncher(void *arg)
                 break;
 
             default:
-                printf("Comando invalido.\n");
+                printf("[CONTROL][AVISO] Comando no reconocido.\n");
                 break;
             }
 
@@ -321,7 +330,7 @@ static void *atenderLauncher(void *arg)
 
         if (r == 0)
         {
-            printf("Launcher cerró la conexión.\n");
+            printf("[SESION] El launcher cerro la conexion.\n");
             cerrarServidoresVentana(&session);
             break;
         }
@@ -336,6 +345,7 @@ static void *atenderLauncher(void *arg)
         break;
     }
 
+    detenerPoolDetectores(&session);
     liberarSessionContext(&session);
 
     return NULL;

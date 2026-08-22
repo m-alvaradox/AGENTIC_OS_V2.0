@@ -47,8 +47,9 @@ ClassificationResult clasificarDocumento(const char *documento,
 
     convertirMinusculas(copia);
 
-    // Tokenizacion
-    char *token = strtok(copia, TOKEN_DELIMITERS);
+    // Tokenizacion reentrante: varios detectores ejecutan esta funcion en paralelo.
+    char *saveptr = NULL;
+    char *token = strtok_r(copia, TOKEN_DELIMITERS, &saveptr);
 
     while (token != NULL)
     {
@@ -69,7 +70,7 @@ ClassificationResult clasificarDocumento(const char *documento,
             resultado.coincidenciasReporte++;
         }
 
-        token = strtok(NULL, TOKEN_DELIMITERS);
+        token = strtok_r(NULL, TOKEN_DELIMITERS, &saveptr);
     }
 
     if (resultado.coincidenciasCorreo < 3)

@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "session_context.h"
 
@@ -21,6 +22,15 @@ int inicializarSessionContext(SessionContext *session,
     session->tipoUsuarioActual = USER_NO_DETECTADO;
     inicializarThreadManager(&session->threadManager);
     session->detectionThreads = server->detectionThreads;
+    session->detectorPool = NULL;
+    session->detectionBatch = NULL;
+    session->batchSize = 0;
+    session->nextTask = 0;
+    session->completedTasks = 0;
+    session->batchSequence = 0;
+    session->currentBatchId = 0;
+    session->detectorStop = false;
+    session->detectorPoolStarted = false;
 
     if (session->detectionThreads <= 0)
     {
@@ -77,6 +87,45 @@ int inicializarSessionContext(SessionContext *session,
         return -1;
     }
 
+    if (pthread_mutex_init(&session->detectorMutex, NULL) != 0)
+    {
+        perror("pthread_mutex_init");
+        pthread_mutex_destroy(&session->processingMutex);
+        pthread_mutex_destroy(&session->sessionMutex);
+        pthread_mutex_destroy(&session->printMutex);
+        pthread_mutex_destroy(&session->perfilMutex);
+        liberarSentenceQueue(&session->sentenceQueue);
+        liberarThreadManager(&session->threadManager);
+        return -1;
+    }
+
+    if (pthread_cond_init(&session->detectorCond, NULL) != 0)
+    {
+        perror("pthread_cond_init");
+        pthread_mutex_destroy(&session->detectorMutex);
+        pthread_mutex_destroy(&session->processingMutex);
+        pthread_mutex_destroy(&session->sessionMutex);
+        pthread_mutex_destroy(&session->printMutex);
+        pthread_mutex_destroy(&session->perfilMutex);
+        liberarSentenceQueue(&session->sentenceQueue);
+        liberarThreadManager(&session->threadManager);
+        return -1;
+    }
+
+    if (pthread_cond_init(&session->batchCompleteCond, NULL) != 0)
+    {
+        perror("pthread_cond_init");
+        pthread_cond_destroy(&session->detectorCond);
+        pthread_mutex_destroy(&session->detectorMutex);
+        pthread_mutex_destroy(&session->processingMutex);
+        pthread_mutex_destroy(&session->sessionMutex);
+        pthread_mutex_destroy(&session->printMutex);
+        pthread_mutex_destroy(&session->perfilMutex);
+        liberarSentenceQueue(&session->sentenceQueue);
+        liberarThreadManager(&session->threadManager);
+        return -1;
+    }
+
     return 0;
 }
 
@@ -103,6 +152,8 @@ void liberarSessionContext(SessionContext *session)
     unirThreads(&session->threadManager);
     liberarThreadManager(&session->threadManager);
     liberarSentenceQueue(&session->sentenceQueue);
+    free(session->detectorPool);
+    free(session->detectionBatch);
 
     if (session->launcherSocket != -1)
     {
@@ -112,6 +163,9 @@ void liberarSessionContext(SessionContext *session)
 
     pthread_mutex_destroy(&session->sessionMutex);
     pthread_mutex_destroy(&session->processingMutex);
+    pthread_cond_destroy(&session->batchCompleteCond);
+    pthread_cond_destroy(&session->detectorCond);
+    pthread_mutex_destroy(&session->detectorMutex);
     pthread_mutex_destroy(&session->printMutex);
     pthread_mutex_destroy(&session->perfilMutex);
 }

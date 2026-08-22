@@ -65,7 +65,7 @@ int iniciarServidor(int puerto)
 
 static void manejarCliente(int client_fd, SessionContext *session)
 {
-    printf("Nuevo cliente conectado.\n");
+    printf("[VENTANA] Conexion de datos establecida.\n");
 
     ClientInfo *info = malloc(sizeof(ClientInfo));
 

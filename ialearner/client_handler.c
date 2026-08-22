@@ -3,17 +3,11 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <errno.h>
+#include <string.h>
 
 #include "client_handler.h"
 #include "classifier.h"
 #include "config.h"
-
-typedef struct
-{
-    SessionContext *session;
-    char *oracion;
-    ClassificationResult resultado;
-} DetectionTask;
 
 static const char *nombreClaseDocumento(DocumentClass clase)
 {
@@ -54,44 +48,163 @@ static const char *nombreTipoUsuario(UserType tipo)
     }
 }
 
-static void *detectarOracion(void *arg)
+static void *ejecutarDetector(void *arg)
 {
-    DetectionTask *task = (DetectionTask *)arg;
-    ClassificationResult resultado;
+    SessionContext *session = (SessionContext *)arg;
 
-    if (task == NULL ||
-        task->session == NULL ||
-        task->oracion == NULL)
+    for (;;)
     {
-        return NULL;
+        char *oracion;
+        ClassificationResult resultado;
+        UserType tipoActual;
+        int numeroTarea;
+        int totalTareas;
+        int loteId;
+
+        pthread_mutex_lock(&session->detectorMutex);
+
+        while (!session->detectorStop &&
+               session->nextTask >= session->batchSize)
+        {
+            pthread_cond_wait(&session->detectorCond,
+                              &session->detectorMutex);
+        }
+
+        if (session->detectorStop)
+        {
+            pthread_mutex_unlock(&session->detectorMutex);
+            break;
+        }
+
+        numeroTarea = session->nextTask++;
+        totalTareas = session->batchSize;
+        loteId = session->currentBatchId;
+        oracion = session->detectionBatch[numeroTarea];
+        pthread_mutex_unlock(&session->detectorMutex);
+
+        resultado = clasificarDocumento(oracion,
+                                        session->server->correo,
+                                        session->server->articulo,
+                                        session->server->reporte);
+
+        /* La decision se actualiza apenas este detector termina. */
+        pthread_mutex_lock(&session->perfilMutex);
+        registrarDocumento(&session->perfil, resultado.clase);
+        session->tipoUsuarioActual = determinarTipoUsuario(&session->perfil);
+        tipoActual = session->tipoUsuarioActual;
+        pthread_mutex_unlock(&session->perfilMutex);
+
+        pthread_mutex_lock(&session->printMutex);
+#if SHOW_DOCUMENT_DEBUG
+        printf("[LOTE %02d][%d/%d] Texto: \"%.*s\"\n",
+               loteId,
+               numeroTarea + 1,
+               totalTareas,
+               (int)strcspn(oracion, "\r\n"),
+               oracion);
+#endif
+        printf("[LOTE %02d][%d/%d] Clase: %-20s | "
+               "coincidencias C:%d A:%d R:%d | usuario: %s\n",
+               loteId,
+               numeroTarea + 1,
+               totalTareas,
+               nombreClaseDocumento(resultado.clase),
+               resultado.coincidenciasCorreo,
+               resultado.coincidenciasArticulo,
+               resultado.coincidenciasReporte,
+               nombreTipoUsuario(tipoActual));
+        pthread_mutex_unlock(&session->printMutex);
+
+        free(oracion);
+
+        pthread_mutex_lock(&session->detectorMutex);
+        session->completedTasks++;
+        if (session->completedTasks == session->batchSize)
+        {
+            pthread_cond_signal(&session->batchCompleteCond);
+        }
+        pthread_mutex_unlock(&session->detectorMutex);
     }
 
-    resultado = clasificarDocumento(task->oracion,
-                                    task->session->server->correo,
-                                    task->session->server->articulo,
-                                    task->session->server->reporte);
-
-    task->resultado = resultado;
-
-#if SHOW_DOCUMENT_DEBUG
-    pthread_mutex_lock(&task->session->printMutex);
-    printf("\n========== ORACION RECIBIDA ==========\n");
-    printf("%s\n", task->oracion);
-    imprimirClasificacion(&resultado);
-    pthread_mutex_unlock(&task->session->printMutex);
-#endif
-
     return NULL;
+}
+
+int iniciarPoolDetectores(SessionContext *session)
+{
+    int creados = 0;
+
+    if (session == NULL || session->detectionThreads <= 0)
+    {
+        return -1;
+    }
+
+    session->detectorPool = calloc((size_t)session->detectionThreads,
+                                   sizeof(pthread_t));
+    session->detectionBatch = calloc((size_t)session->detectionThreads,
+                                     sizeof(char *));
+
+    if (session->detectorPool == NULL || session->detectionBatch == NULL)
+    {
+        free(session->detectorPool);
+        free(session->detectionBatch);
+        session->detectorPool = NULL;
+        session->detectionBatch = NULL;
+        return -1;
+    }
+
+    for (int i = 0; i < session->detectionThreads; i++)
+    {
+        if (pthread_create(&session->detectorPool[i], NULL,
+                           ejecutarDetector, session) != 0)
+        {
+            perror("pthread_create detector");
+            pthread_mutex_lock(&session->detectorMutex);
+            session->detectorStop = true;
+            pthread_cond_broadcast(&session->detectorCond);
+            pthread_mutex_unlock(&session->detectorMutex);
+
+            for (int j = 0; j < creados; j++)
+            {
+                pthread_join(session->detectorPool[j], NULL);
+            }
+
+            free(session->detectorPool);
+            free(session->detectionBatch);
+            session->detectorPool = NULL;
+            session->detectionBatch = NULL;
+            return -1;
+        }
+        creados++;
+    }
+
+    session->detectorPoolStarted = true;
+    return 0;
+}
+
+void detenerPoolDetectores(SessionContext *session)
+{
+    if (session == NULL || !session->detectorPoolStarted)
+    {
+        return;
+    }
+
+    pthread_mutex_lock(&session->detectorMutex);
+    session->detectorStop = true;
+    pthread_cond_broadcast(&session->detectorCond);
+    pthread_mutex_unlock(&session->detectorMutex);
+
+    for (int i = 0; i < session->detectionThreads; i++)
+    {
+        pthread_join(session->detectorPool[i], NULL);
+    }
+
+    session->detectorPoolStarted = false;
 }
 
 void procesarColaPendiente(SessionContext *session,
                             bool forzar)
 {
     int p;
-    char **oraciones;
-    DetectionTask *tasks;
-    pthread_t *hilos;
-    bool *hiloCreado;
     int extraidas;
 
     if (session == NULL)
@@ -114,30 +227,11 @@ void procesarColaPendiente(SessionContext *session,
         return;
     }
 
-    oraciones = calloc((size_t)p, sizeof(char *));
-    tasks = calloc((size_t)p, sizeof(DetectionTask));
-    hilos = calloc((size_t)p, sizeof(pthread_t));
-    hiloCreado = calloc((size_t)p, sizeof(bool));
-
-    if (oraciones == NULL ||
-        tasks == NULL ||
-        hilos == NULL ||
-        hiloCreado == NULL)
-    {
-        perror("calloc");
-        free(oraciones);
-        free(tasks);
-        free(hilos);
-        free(hiloCreado);
-        pthread_mutex_unlock(&session->processingMutex);
-        return;
-    }
-
     while (forzar ||
            cantidadOraciones(&session->sentenceQueue) >= p)
     {
         extraidas = extraerOraciones(&session->sentenceQueue,
-                                     oraciones,
+                                     session->detectionBatch,
                                      p);
 
         if (extraidas == 0)
@@ -146,67 +240,29 @@ void procesarColaPendiente(SessionContext *session,
         }
 
         pthread_mutex_lock(&session->printMutex);
-        printf("[Loader] Procesando lote de %d oracion(es) con P=%d.\n",
-               extraidas,
-               p);
+        printf("\n[LOADER] Preparando lote | oraciones=%d | limite P=%d\n",
+               extraidas, p);
         pthread_mutex_unlock(&session->printMutex);
 
-        for (int i = 0; i < extraidas; i++)
-        {
-            tasks[i].session = session;
-            tasks[i].oracion = oraciones[i];
-            tasks[i].resultado.clase = DOC_SIN_CLASIFICAR;
-            tasks[i].resultado.coincidenciasCorreo = 0;
-            tasks[i].resultado.coincidenciasArticulo = 0;
-            tasks[i].resultado.coincidenciasReporte = 0;
+        pthread_mutex_lock(&session->detectorMutex);
+        session->batchSize = extraidas;
+        session->nextTask = 0;
+        session->completedTasks = 0;
+        session->currentBatchId = ++session->batchSequence;
+        printf("[LOADER] Lote %02d iniciado: despertando %d detector(es).\n",
+               session->currentBatchId, extraidas);
+        pthread_cond_broadcast(&session->detectorCond);
 
-            if (pthread_create(&hilos[i],
-                               NULL,
-                               detectarOracion,
-                               &tasks[i]) == 0)
-            {
-                hiloCreado[i] = true;
-            }
-            else
-            {
-                perror("pthread_create");
-                detectarOracion(&tasks[i]);
-                hiloCreado[i] = false;
-            }
+        while (session->completedTasks < session->batchSize)
+        {
+            pthread_cond_wait(&session->batchCompleteCond,
+                              &session->detectorMutex);
         }
 
-        for (int i = 0; i < extraidas; i++)
-        {
-            UserType tipoActual;
-            DocumentClass clase;
-
-            if (hiloCreado[i])
-            {
-                pthread_join(hilos[i], NULL);
-                hiloCreado[i] = false;
-            }
-
-            clase = tasks[i].resultado.clase;
-
-            pthread_mutex_lock(&session->perfilMutex);
-            registrarDocumento(&session->perfil,
-                               clase);
-            session->tipoUsuarioActual =
-                determinarTipoUsuario(&session->perfil);
-            tipoActual = session->tipoUsuarioActual;
-            pthread_mutex_unlock(&session->perfilMutex);
-
-            pthread_mutex_lock(&session->printMutex);
-            printf("[Detector] Oracion clasificada como: %s.\n",
-                   nombreClaseDocumento(clase));
-            printf("[Perfil] Tipo de usuario actual: %s.\n",
-                   nombreTipoUsuario(tipoActual));
-            pthread_mutex_unlock(&session->printMutex);
-
-            free(tasks[i].oracion);
-            tasks[i].oracion = NULL;
-            oraciones[i] = NULL;
-        }
+        session->batchSize = 0;
+        printf("[LOADER] Lote %02d completado.\n",
+               session->currentBatchId);
+        pthread_mutex_unlock(&session->detectorMutex);
 
         if (!forzar)
         {
@@ -214,10 +270,6 @@ void procesarColaPendiente(SessionContext *session,
         }
     }
 
-    free(hiloCreado);
-    free(hilos);
-    free(tasks);
-    free(oraciones);
     pthread_mutex_unlock(&session->processingMutex);
 }
 
@@ -238,7 +290,7 @@ void *ejecutarLoader(void *arg)
     }
 
     pthread_mutex_lock(&session->printMutex);
-    printf("[Loader] Activo. Esperando lotes de %d oracion(es).\n", p);
+    printf("[LOADER] Activo | tamano de lote P=%d | detectores suspendidos.\n", p);
     pthread_mutex_unlock(&session->printMutex);
 
     while (sessionEstaActiva(session))
@@ -259,15 +311,11 @@ void *ejecutarLoader(void *arg)
             break;
         }
 
-        pthread_mutex_lock(&session->printMutex);
-        printf("[Loader] Lote completo. Activando detectores.\n");
-        pthread_mutex_unlock(&session->printMutex);
-
         procesarColaPendiente(session, false);
     }
 
     pthread_mutex_lock(&session->printMutex);
-    printf("[Loader] Finalizado.\n");
+    printf("[LOADER] Finalizado.\n");
     pthread_mutex_unlock(&session->printMutex);
 
     return NULL;
@@ -429,7 +477,7 @@ void procesarDocumento(ClientInfo *info)
     pendientes = cantidadOraciones(&info->session->sentenceQueue);
 
     pthread_mutex_lock(&info->session->printMutex);
-    printf("[Ventana] Oracion encolada. Pendientes: %d/%d.\n",
+    printf("[COLA] Oracion recibida | pendientes=%d | necesarias=%d\n",
            pendientes,
            info->session->detectionThreads);
     pthread_mutex_unlock(&info->session->printMutex);
